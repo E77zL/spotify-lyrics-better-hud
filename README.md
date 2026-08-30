@@ -6,6 +6,16 @@
 
 ---
 
+# Spotify Lyrics HUD（Spotify 悬浮歌词）
+
+## 📸 效果演示
+
+![Spotify 悬浮歌词效果演示](https://github.com/Fanbeixi/spotify-lyrics-HUD_CN/files/a85e0e29bc744d5c7e92622c91d67e33.png)
+
+*图片展示：Spotify 播放 Ariana Grande - "oh well" 时的歌词悬浮窗效果*
+
+---
+
 ## ✨ 核心特性
 
 - 🖱️ **可自由拖动和缩放** - 悬浮窗可以随意移动位置和调整大小
