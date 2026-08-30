@@ -34,8 +34,6 @@
 | 系统 | 版本 | 状态 |
 |------|------|------|
 | **Windows** | 10 (1809+) / 11 | ✅ 完全支持 |
-| **macOS** | 10.14+ | ✅ 完全支持 |
-| **Spotify 网页版** | 浏览器 | ⚠️ 未测试，使用前请自行验证 |
 
 **前置条件：** Spotify 桌面应用正在运行（推荐使用官方桌面客户端）
 
@@ -52,7 +50,6 @@
 1. 前往 [Releases 页面](https://github.com/Fanbeixi/spotify-lyrics-hud/releases)
 2. 下载最新版本的安装包：
    - Windows：`SpotifyLyricsHUD-Setup-*.exe`
-   - macOS：`SpotifyLyricsHUD-*-mac.dmg`
 3. 双击安装，自动创建快捷方式
 
 ### 选项二：从源码运行（开发者）
@@ -129,7 +126,6 @@ spotify-lyrics-hud/
 ├── src/                 # 核心逻辑模块
 │   ├── nowPlayingTracker.js   # 播放信息获取
 │   ├── smtcWorker.js          # Windows 实现
-│   ├── macWorker.js           # macOS 实现
 │   ├── lyrics.js              # 歌词获取流程
 │   ├── lrc.js                 # LRC 格式解析
 │   ├── settingsStore.js       # 配置持久化
@@ -145,7 +141,6 @@ spotify-lyrics-hud/
 npm start          # 运行开发版本
 npm run dist       # 打包当前系统
 npm run dist:win   # 打包 Windows 版本
-npm run dist:mac   # 打包 macOS 版本
 ```
 
 ### 自动化打包（GitHub Actions）
@@ -174,8 +169,6 @@ A: 本项目主要针对桌面应用开发。网页版的兼容性未经测试�
 **Q: 支持 Spotify 移动应用吗？**  
 A: 不支持。本项目仅为桌面应用设计。
 
-**Q: macOS 第一次打开提示"无法验证"？**  
-A: 这是正常的。右键应用 → 选择「打开」即可。之后不会再提示。
 
 **Q: 歌词显示不准确或空白？**  
 A: 可能的原因：
@@ -185,7 +178,6 @@ A: 可能的原因：
 
 **Q: 如何卸载？**  
 A: Windows：设置 → 应用 → 已安装的应用 → 卸载  
-macOS：访达 → 应用程序 → 拖进垃圾桶
 
 ---
 
