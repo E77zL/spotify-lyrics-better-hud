@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>Spotify 悬浮歌词</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="panel" id="panel">
+    <!-- 顶部拖动条：平时几乎透明，鼠标移上去才显现，避免挡住歌词 -->
+    <div class="drag-bar" id="dragBar">
+      <span class="drag-handle">⠿</span>
+      <span class="track-info" id="trackInfo"></span>
+      <div class="controls">
+        <button class="ctrl-btn" id="fontSmaller" title="缩小字体">A-</button>
+        <button class="ctrl-btn" id="fontBigger" title="放大字体">A+</button>
+        <button class="ctrl-btn close-btn" id="closeBtn" title="关闭歌词窗（可在系统托盘重新打开）">✕</button>
+      </div>
+    </div>
+
+    <div class="lyrics-viewport" id="lyricsViewport">
+      <div class="lyrics-list" id="lyricsList">
+        <p class="status-message" id="statusMessage">正在连接 Spotify...</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>
