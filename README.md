@@ -10,7 +10,7 @@
 
 ## 📸 效果演示
 
-![Spotify 悬浮歌词效果演示](https://github.com/Fanbeixi/spotify-lyrics-HUD_CN/files/a85e0e29bc744d5c7e92622c91d67e33.png)
+![Spotify 悬浮歌词效果演示]([https://github.com/Fanbeixi/spotify-lyrics-HUD_CN/files/a85e0e29bc744d5c7e92622c91d67e33.png](https://raw.githubusercontent.com/Fanbeixi/spotify-lyrics-HUD_CN/main/a85e0e29bc744d5c7e92622c91d67e33.png))
 
 *图片展示：Spotify 播放 Ariana Grande - "oh well" 时的歌词悬浮窗效果*
 
