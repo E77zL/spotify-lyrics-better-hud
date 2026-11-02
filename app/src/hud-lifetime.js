@@ -3,7 +3,7 @@
 const net = require('net');
 // A dedicated named pipe works for Windows GUI executables where Electron's
 // stdin can be NUL even when the parent redirects it. EOF also covers crashes.
-function followLauncher({ app, BrowserWindow, pipePath = process.env.SPOTIFY_HUD_LIFETIME_PIPE }) {
+function followSpotify({ app, BrowserWindow, pipePath = process.env.SPOTIFY_HUD_LIFETIME_PIPE }) {
   if (typeof pipePath !== 'string' || !/^\\\\\.\\pipe\\SpotifyLyricsHUD\.Lifetime\.[a-f0-9]{32}$/.test(pipePath)) throw new Error('Invalid HUD lifetime pipe');
   let closing = false;
   function hideWindows() {
@@ -27,4 +27,4 @@ function followLauncher({ app, BrowserWindow, pipePath = process.env.SPOTIFY_HUD
   return quit;
 }
 
-module.exports = { followLauncher };
+module.exports = { followSpotify };

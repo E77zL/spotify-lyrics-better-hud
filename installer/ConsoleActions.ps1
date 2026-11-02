@@ -4,6 +4,7 @@ $ProgressPreference = 'SilentlyContinue'
 [Console]::OutputEncoding = New-Object Text.UTF8Encoding($false)
 $installRoot = Join-Path $env:LOCALAPPDATA 'SpotifyLyricsCompanion'
 $runKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run'
+. (Join-Path $PSScriptRoot 'Bridge.ps1')
 
 function Write-Step([string]$Number, [string]$Message) { Write-Host "  [$Number] $Message" -ForegroundColor Green }
 function Find-Spicetify {
@@ -12,6 +13,10 @@ function Find-Spicetify {
     foreach ($p in @("$env:LOCALAPPDATA\spicetify\spicetify.exe", "$env:APPDATA\spicetify\spicetify.exe", "$env:USERPROFILE\spicetify-cli\spicetify.exe")) { if (Test-Path -LiteralPath $p) { return $p } }
 }
 function Find-Spotify {
+    try {
+        $saved = (Get-Content -LiteralPath (Join-Path $installRoot 'connection.json') -Raw | ConvertFrom-Json).spotifyPath
+        if ($saved -and (Test-Path -LiteralPath (Join-Path $saved 'Spotify.exe'))) { return $saved }
+    } catch { }
     foreach ($p in @("$env:APPDATA\Spotify", "$env:LOCALAPPDATA\Spotify", "$env:ProgramFiles\Spotify")) { if (Test-Path -LiteralPath (Join-Path $p 'Spotify.exe')) { return $p } }
 }
 function Test-IsElevated {
@@ -91,13 +96,15 @@ try {
         $tokens = $null; $errors = $null
         [System.Management.Automation.Language.Parser]::ParseFile($PSCommandPath, [ref]$tokens, [ref]$errors) | Out-Null
         if ($errors.Count) { throw ($errors | Out-String) }
-        foreach ($name in @('SpotifyLyricsLauncher.exe','SpotifyLyricsHUD-1.2.zip','spotify-lyrics-hud.js','HUD-LICENSE.txt')) { if (!(Test-Path -LiteralPath (Join-Path $PSScriptRoot $name))) { throw "Missing payload $name" } }
+        foreach ($name in @('version.dll','Bridge.ps1','SpotifyLyricsHUD-1.2.1.zip','spotify-lyrics-hud.js','HUD-LICENSE.txt')) { if (!(Test-Path -LiteralPath (Join-Path $PSScriptRoot $name))) { throw "Missing payload $name" } }
+        $bridgeInfo = (Get-Item -LiteralPath (Join-Path $PSScriptRoot 'version.dll')).VersionInfo
+        if ($bridgeInfo.InternalName -ne 'SpotifyLyricsBridge') { throw 'Invalid Spotify process bridge.' }
         $release = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'spicetify-release.json') -Raw | ConvertFrom-Json
         if ((Get-FileHash (Join-Path $PSScriptRoot 'spicetify-windows-x64.zip') -Algorithm SHA256).Hash -ne $release.sha256) { throw 'Spicetify hash mismatch.' }
         Add-Type -AssemblyName System.IO.Compression.FileSystem
-        $zip = [IO.Compression.ZipFile]::OpenRead((Join-Path $PSScriptRoot 'SpotifyLyricsHUD-1.2.zip'))
+        $zip = [IO.Compression.ZipFile]::OpenRead((Join-Path $PSScriptRoot 'SpotifyLyricsHUD-1.2.1.zip'))
         try {
-            foreach ($entry in @('Spotify悬浮歌词.exe','resources/app/main.js','resources/app/preload.js','resources/app/src/hud-control.js','resources/app/src/hud-snapshot.js','resources/app/src/nowPlayingTracker.js','resources/app/src/hud-lifetime.js','resources/app/src/hud-playback.js','resources/app/src/playbackClock.js','resources/app/src/hud-offsets.js','resources/app/src/hud-store.js','resources/app/src/http.js','resources/app/src/matching.js','resources/app/src/qqmusic.js','resources/app/src/netease.js','resources/app/src/lyrics.js')) {
+            foreach ($entry in @('Spotify悬浮歌词.exe','resources/app/main.js','resources/app/preload.js','resources/app/src/hud-control.js','resources/app/src/hud-snapshot.js','resources/app/src/nowPlayingTracker.js','resources/app/src/hud-lifetime.js','resources/app/src/hud-playback.js','resources/app/src/playbackClock.js','resources/app/src/hud-offsets.js','resources/app/src/hud-store.js','resources/app/src/json-file.js','resources/app/src/http.js','resources/app/src/matching.js','resources/app/src/qqmusic.js','resources/app/src/netease.js','resources/app/src/lyrics.js')) {
                 if (!$zip.GetEntry($entry)) { throw ('HUD archive missing: ' + $entry) }
             }
         } finally { $zip.Dispose() }
@@ -105,14 +112,18 @@ try {
     }
     if ($Action -eq 'Diagnose') {
         Write-Step 'INFO' ('Spotify: ' + (Find-Spotify)); Write-Step 'INFO' ('Spicetify: ' + (Find-Spicetify))
-        Write-Step 'INFO' ('HUD integration: ' + [bool](Test-Path (Join-Path $installRoot 'SpotifyLyricsLauncher.exe')))
+        $spotify = Find-Spotify
+        Write-Step 'INFO' ('Spotify process integration: ' + [bool]($spotify -and (Test-LyricsBridgeOwned (Join-Path $spotify 'version.dll') $installRoot)))
         Write-Host '  此检查不会修改文件或安装组件。'; exit 0
     }
     $script:IsElevated = Test-IsElevated
     if ($script:IsElevated) { Write-Host '  管理员窗口已支持，Spicetify 将自动使用 --bypass-admin。' }
     if ($Action -eq 'Uninstall') {
+        Wait-SpotifyClosed
         Stop-Companion
         Remove-ItemProperty -Path $runKey -Name 'SpotifyLyricsCompanion' -ErrorAction SilentlyContinue
+        $spotify = Find-Spotify
+        if ($spotify) { Remove-LyricsBridge $spotify $installRoot }
         $script:Spicetify = Find-Spicetify
         if ($script:Spicetify) { Wait-SpotifyClosed; Invoke-Spicetify config extensions 'spotify-lyrics-hud.js-'; Invoke-Spicetify apply }
         Write-Host '  已停用 HUD 联动和按钮。HUD 设置、组件文件及其他扩展保留。' -ForegroundColor Green; exit 0
@@ -121,13 +132,17 @@ try {
     $spotify = Find-Spotify
     if (!$spotify) { $spotify = (Read-Host '  输入包含 Spotify.exe 的目录').Trim().Trim('"') }
     if (!(Test-Path -LiteralPath (Join-Path $spotify 'Spotify.exe'))) { throw '未找到 Spotify.exe。' }
+    $existingBridge = Join-Path $spotify 'version.dll'
+    if ((Test-Path -LiteralPath $existingBridge) -and !(Test-LyricsBridgeOwned $existingBridge $installRoot)) {
+        throw 'Spotify 目录内已有其它程序的 version.dll，未覆盖。请先移除冲突的插件再安装。'
+    }
     Wait-SpotifyClosed
     Write-Step '2/6' '准备 Spicetify 并备份配置'
     Ensure-Spicetify
     $configPath = Get-SpicetifyConfig -InitializeIfMissing
     $stamp = Get-Date -Format 'yyyyMMdd-HHmmss-fff'
     Copy-Item -LiteralPath $configPath -Destination ($configPath + '.hud-backup-' + $stamp)
-    Write-Step '3/6' '停用旧歌词组件，安装 Lyrics HUD Companion 1.2'
+    Write-Step '3/6' '停用旧歌词组件，安装 Lyrics HUD Companion 1.2.1'
     Stop-Companion; Disable-OldOverlay
     $originalHud = @(Get-Process 'Spotify悬浮歌词' -ErrorAction SilentlyContinue | Where-Object { $_.SessionId -eq [Diagnostics.Process]::GetCurrentProcess().SessionId })
     foreach ($process in $originalHud) {
@@ -144,12 +159,12 @@ try {
     }
     New-Item -ItemType Directory -Path $installRoot -Force | Out-Null
     $stage = Join-Path $installRoot ('HUD.staging-' + $stamp)
-    Expand-Archive -LiteralPath (Join-Path $PSScriptRoot 'SpotifyLyricsHUD-1.2.zip') -DestinationPath $stage
+    Expand-Archive -LiteralPath (Join-Path $PSScriptRoot 'SpotifyLyricsHUD-1.2.1.zip') -DestinationPath $stage
     if (!(Test-Path -LiteralPath (Join-Path $stage 'Spotify悬浮歌词.exe'))) { throw 'HUD 解压失败。' }
     $hudDir = Join-Path $installRoot 'HUD'
     if (Test-Path -LiteralPath $hudDir) { Move-Item -LiteralPath $hudDir -Destination (Join-Path $installRoot ('HUD.backup-' + $stamp)) }
     Move-Item -LiteralPath $stage -Destination $hudDir
-    Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'SpotifyLyricsLauncher.exe'),(Join-Path $PSScriptRoot 'HUD-LICENSE.txt'),(Join-Path $PSScriptRoot 'NOTICE.txt') -Destination $installRoot -Force
+    Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'HUD-LICENSE.txt'),(Join-Path $PSScriptRoot 'NOTICE.txt') -Destination $installRoot -Force
     $connectionPath = Join-Path $installRoot 'connection.json'
     $connection = $null
     if (Test-Path -LiteralPath $connectionPath) { try { $connection = Get-Content -LiteralPath $connectionPath -Raw | ConvertFrom-Json } catch { } }
@@ -172,11 +187,11 @@ try {
     Invoke-Spicetify config extensions 'spotify-lyrics-hud.js'
     Write-Step '5/6' '应用 Spotify 按钮'
     Invoke-BackupApply
-    Write-Step '6/6' '启用 Spotify 启动联动'
-    New-Item -Path $runKey -Force | Out-Null
-    $launcher = Join-Path $installRoot 'SpotifyLyricsLauncher.exe'
-    New-ItemProperty -Path $runKey -Name 'SpotifyLyricsCompanion' -Value ('"' + $launcher + '"') -PropertyType String -Force | Out-Null
-    Start-Process -FilePath $launcher -WindowStyle Hidden
+    Write-Step '6/6' '安装 Spotify 进程内歌词联动模块'
+    Install-LyricsBridge $spotify $installRoot (Join-Path $PSScriptRoot 'version.dll')
+    Remove-ItemProperty -Path $runKey -Name 'SpotifyLyricsCompanion' -ErrorAction SilentlyContinue
+    $legacy = Join-Path $installRoot 'SpotifyLyricsLauncher.exe'
+    if (Test-Path -LiteralPath $legacy) { Remove-Item -LiteralPath $legacy -Force }
     Write-Host '  安装完成。打开 Spotify，点击麦克风左侧 A 按钮显示 / 隐藏 HUD。' -ForegroundColor Green
-    Write-Host '  HUD 会随 Spotify 打开和退出，无需手动运行。设置仍在 HUD 的托盘菜单里。'; exit 0
+    Write-Host '  歌词由 Spotify 进程直接带起，没有独立启动器或开机后台程序。设置在歌词托盘菜单中。'; exit 0
 } catch { Write-Host ('  [ERROR] ' + $_.Exception.Message) -ForegroundColor Red; exit 1 }

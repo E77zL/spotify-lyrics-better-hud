@@ -103,6 +103,10 @@ input[type='range'] {
   border-color: rgba(255, 255, 255, 0.5);
 }
 
+.swatch[aria-pressed='true'] {
+  border-color: #35d07f;
+}
+
 .toggle input {
   width: 18px;
   height: 18px;

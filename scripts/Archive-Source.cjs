@@ -7,8 +7,8 @@ function walk(dir){for(const entry of fs.readdirSync(path.join(root,dir),{withFi
   if(entry.isDirectory()) {if(!['node_modules'].includes(entry.name))walk(relative);}
   else if(!relative.startsWith('tests/')||relative.endsWith('.cjs'))files.push(relative);
 }}
-for(const dir of ['app','extension','installer','licenses','scripts','.github'])walk(dir);
-for(const entry of fs.readdirSync(path.join(root,'tests'))){if(entry.endsWith('.cjs'))files.push('tests/'+entry);}
+for(const dir of ['app','extension','installer','native','licenses','scripts','.github'])walk(dir);
+for(const entry of fs.readdirSync(path.join(root,'tests'))){if(/\.(?:cjs|cpp|ps1)$/.test(entry))files.push('tests/'+entry);}
 for(const file of files){
   if(/(?:^|\/)(?:connection\.json|lyric-offsets\.json|settings\.json|window-state\.json)$/.test(file))throw Error('Private state in source archive');
 }

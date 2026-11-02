@@ -2,6 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { writeJSON } = require('./json-file');
 
 function offsetFile() {
   if (process.env.SPOTIFY_HUD_TIMING_FILE) return process.env.SPOTIFY_HUD_TIMING_FILE;
@@ -35,15 +36,7 @@ function createOffsetStore(file) {
       delayMs = Math.max(-60000, Math.min(60000, Math.round(delayMs)));
       if (delayMs) next.set(id, { title: snapshot.title, artist: snapshot.artist || '', durationSec: snapshot.durationSec || 0, delayMs });
       else next.delete(id);
-      fs.mkdirSync(path.dirname(file), { recursive: true });
-      const temporary = file + '.tmp';
-      try {
-        fs.writeFileSync(temporary, JSON.stringify({ version: 1, offsets: Object.fromEntries(next) }), 'utf8');
-        fs.renameSync(temporary, file);
-      } catch (error) {
-        try { fs.unlinkSync(temporary); } catch { }
-        throw error;
-      }
+      writeJSON(file, { version: 1, offsets: Object.fromEntries(next) });
       entries.clear();
       for (const [id, entry] of next) entries.set(id, entry);
       return delayMs;

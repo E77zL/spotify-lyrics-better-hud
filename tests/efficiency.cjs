@@ -90,7 +90,7 @@ const result = text => ({ found: true, lines: [0, 0.5, 1, 2].map(time => ({ time
   console.log('PASS abort on track change/quit, A -> B -> A race rejection, bounded cache eviction');
 
   const timer = clock(), writes = [];
-  const store = load('hud-store.js', { fs: { readFileSync() { throw Error('first run'); }, writeFileSync(file, data) { writes.push(JSON.parse(data)); } } }, timer).createStore('fixture.json', { width: 420, height: 260 });
+  const store = load('hud-store.js', { fs: { readFileSync() { throw Error('first run'); } }, './json-file': { writeJSON(file, value) { writes.push({ ...value }); } } }, timer).createStore('fixture.json', { width: 420, height: 260 });
   for (let i = 0; i < 120; i++) { store.update({ width: 421 + i }); await timer.advance(10); }
   assert.equal(writes.length, 0); await timer.advance(250); assert.equal(writes.length, 1); assert.equal(writes[0].width, 540);
   assert.equal(store.update({ width: 540 }), false); assert.equal(timer.size, 0);

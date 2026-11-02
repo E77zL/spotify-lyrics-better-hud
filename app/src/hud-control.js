@@ -6,6 +6,7 @@ const path = require('path');
 const { WebSocketServer, WebSocket } = require('ws');
 const { performance } = require('perf_hooks');
 const { spotifySnapshot } = require('./hud-snapshot');
+const { version } = require('../package.json');
 
 function startHudControl({ app, window, loadEnabled, saveEnabled, refreshTray, connectionFile, onPlayback = () => {}, getTiming = () => null }) {
   const connection = JSON.parse(fs.readFileSync(connectionFile, 'utf8').replace(/^\uFEFF/, ''));
@@ -14,7 +15,7 @@ function startHudControl({ app, window, loadEnabled, saveEnabled, refreshTray, c
   let quitting = false;
   let fadeTimer = null;
   let playbackClient = null;
-  const state = () => ({ type: 'state', enabled, visible: !window.isDestroyed() && window.isVisible(), opacity: window.isDestroyed() ? 0 : window.getOpacity(), version: '1.2', hud: '5.1.0', timing: getTiming() });
+  const state = () => ({ type: 'state', enabled, visible: !window.isDestroyed() && window.isVisible(), opacity: window.isDestroyed() ? 0 : window.getOpacity(), version, hud: '5.1.0', integration: 'spotify-process', hostPid: Number(process.env.SPOTIFY_HUD_PARENT_PID) || null, timing: getTiming() });
   const broadcast = () => {
     const message = JSON.stringify(state());
     for (const client of sockets.clients) if (client.readyState === WebSocket.OPEN) client.send(message);

@@ -9,7 +9,7 @@ const { offsetFile, createOffsetStore } = require('./src/hud-offsets');
 
 if (process.env.SPOTIFY_HUD_USER_DATA) app.setPath('userData', process.env.SPOTIFY_HUD_USER_DATA);
 const settingsStore = createStore(path.join(app.getPath('userData'), 'settings.json'), {
-  transparency: 0.55, bgColor: '#121214', lyricColor: '#f5f5f0', autostart: false,
+  transparency: 0.55, bgColor: '#121214', lyricColor: '#f5f5f0',
 });
 const boundsStore = createStore(path.join(app.getPath('userData'), 'window-state.json'), { width: 420, height: 260 });
 const managed = process.argv.includes('--managed-by-spotify');
@@ -26,10 +26,6 @@ function send(channel, payload) {
 
 function applySettings() {
   send('settings:apply', settings);
-}
-
-function applyAutostart() {
-  if (app.isPackaged && !managed) app.setLoginItemSettings({ openAtLogin: !!settings.autostart, path: process.execPath });
 }
 
 function refreshTray() {
@@ -50,7 +46,7 @@ function toggleWindow(enabled) {
 function openSettings() {
   if (settingsWindow && !settingsWindow.isDestroyed()) { settingsWindow.focus(); return; }
   settingsWindow = new BrowserWindow({
-    width: 380, height: 360, resizable: false, minimizable: false, maximizable: false,
+    width: 380, height: 470, useContentSize: true, resizable: false, minimizable: false, maximizable: false,
     alwaysOnTop: true, icon: path.join(__dirname, 'assets/app-icon.png'),
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false },
   });
@@ -116,15 +112,14 @@ ipcMain.handle('settings:get', () => settings);
 ipcMain.handle('settings:save', (_event, patch) => {
   if (settingsStore.update(patch)) {
     settings = settingsStore.get();
-    if ('autostart' in patch) applyAutostart();
     applySettings();
   }
   return settings;
 });
 
 if (singleInstance) {
-  if (managed) require('./src/hud-lifetime').followLauncher({ app, BrowserWindow });
-  app.whenReady().then(() => { applyAutostart(); createWindow(); createTray(); });
+  if (managed) require('./src/hud-lifetime').followSpotify({ app, BrowserWindow });
+  app.whenReady().then(() => { createWindow(); createTray(); });
 } else app.quit();
 
 app.on('window-all-closed', () => { if (app.isQuitting) app.quit(); });
