@@ -1,74 +1,24 @@
-# 自动打包 Windows / macOS 安装包。
-#
-# 触发方式两种：
-#   1. 推送一个 v 开头的 tag（比如 v5.0.3）→ 自动打包并发布到 GitHub Release，
-#      发布页面会附带 Windows 的 .exe 和 macOS 的 .dmg，别人可以直接下载。
-#   2. 在 GitHub 网页上手动点 "Run workflow" → 只打包，不发布，
-#      产物放在这次运行页面的 "Artifacts" 里下载，适合平时测试改动。
-#
-# 两个平台分别用 GitHub 提供的免费云端 Windows / macOS 虚拟机来跑，
-# 本地完全不需要真的有一台 Mac。
-
-name: 构建安装包
-
+name: Build Windows 1.2
 on:
+  workflow_dispatch:
   push:
-    tags:
-      - 'v*'
-  workflow_dispatch: {}
-
-# electron-builder 要把安装包上传到 Release，需要有写入仓库内容的权限
+    branches: [main, master]
+  pull_request:
 permissions:
-  contents: write
-
+  contents: read
 jobs:
   build:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: windows-latest
-            dist_script: dist:win
-          - os: macos-latest
-            dist_script: dist:mac
-
-    runs-on: ${{ matrix.os }}
-
+    runs-on: windows-latest
     steps:
-      - name: 检出代码
-        uses: actions/checkout@v4
-
-      - name: 安装 Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: 20
-
-      - name: 安装依赖
-        run: npm install
-
-      # 推送 tag 时：打包并直接发布到本次 tag 对应的 GitHub Release
-      - name: 打包并发布（推送 tag 时）
-        if: startsWith(github.ref, 'refs/tags/')
-        run: npx electron-builder --publish always ${{ matrix.os == 'windows-latest' && '--win nsis' || '--mac dmg' }}
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # 明确告诉 electron-builder 不要在 CI 机器上找代码签名证书
-          # （CI 机器上本来就没有，不关掉这个可能会报错或卡住）
-          CSC_IDENTITY_AUTO_DISCOVERY: false
-
-      # 手动点 "Run workflow" 时：只打包，不发布，方便平时测试
-      - name: 仅打包（手动触发时）
-        if: github.event_name == 'workflow_dispatch'
-        run: npm run ${{ matrix.dist_script }}
-        env:
-          CSC_IDENTITY_AUTO_DISCOVERY: false
-
-      - name: 上传本次构建产物（手动触发时可在 Artifacts 里下载）
-        if: github.event_name == 'workflow_dispatch'
-        uses: actions/upload-artifact@v4
+          node-version: '22'
+      - name: Compile and verify
+        shell: powershell
+        run: .\Build.ps1
+      - uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.os }}-installer
-          path: |
-            dist/*.exe
-            dist/*.dmg
-          if-no-files-found: ignore
+          name: Spotify-Lyrics-HUD-v1.2
+          path: dist/*
+          if-no-files-found: error

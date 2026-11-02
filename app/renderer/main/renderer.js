@@ -4,6 +4,9 @@ const trackInfo = document.getElementById('trackInfo');
 const closeBtn = document.getElementById('closeBtn');
 const fontSmallerBtn = document.getElementById('fontSmaller');
 const fontBiggerBtn = document.getElementById('fontBigger');
+const timingEarlierBtn = document.getElementById('timingEarlier');
+const timingLaterBtn = document.getElementById('timingLater');
+const timingValue = document.getElementById('timingValue');
 
 let currentLines = []; // [{ time, text }]
 let currentIndex = -1;
@@ -20,12 +23,15 @@ function loadFontSize() {
 }
 
 function applyFontSize(size) {
+  const dimSize = Math.max(FONT_MIN - 2, Math.round(size * 0.68));
   document.documentElement.style.setProperty('--font-size-active', `${size}px`);
   document.documentElement.style.setProperty(
     '--font-size-dim',
-    `${Math.max(FONT_MIN - 2, Math.round(size * 0.68))}px`
+    `${dimSize}px`
   );
+  document.documentElement.style.setProperty('--lyric-dim-scale', String(dimSize / size));
   localStorage.setItem('lyrics-font-size', String(size));
+  centerActiveLine();
 }
 
 applyFontSize(loadFontSize());
@@ -42,11 +48,27 @@ closeBtn.addEventListener('click', () => {
   window.lyricsAPI.closeWindow();
 });
 
+function applyTiming(state) {
+  if (!state) return;
+  timingValue.textContent = `${state.offsetMs > 0 ? '+' : ''}${(state.offsetMs / 1000).toFixed(1)}s`;
+  timingValue.title = state.error || 'Lyric delay. Click to reset. Negative: earlier; positive: later.';
+  for (const button of [timingEarlierBtn, timingLaterBtn, timingValue]) button.disabled = !state.canAdjust;
+}
+
+for (const [button, delta] of [[timingEarlierBtn, -500], [timingLaterBtn, 500], [timingValue, 0]]) {
+  button.addEventListener('click', () => window.lyricsAPI.adjustTiming(delta).then(applyTiming).catch(() => {}));
+}
+window.lyricsAPI.onTimingChange?.(applyTiming);
+
 function renderStatusMessage(message) {
   currentLines = [];
   currentIndex = -1;
   lineElements = [];
-  lyricsList.innerHTML = `<p class="status-message">${message}</p>`;
+  const status = document.createElement('p');
+  status.className = 'status-message';
+  status.textContent = message;
+  lyricsList.replaceChildren(status);
+  lyricsList.style.transform = 'translateY(0px)';
 }
 
 function renderLyricsLines(lines) {
@@ -55,20 +77,29 @@ function renderLyricsLines(lines) {
   lyricsList.innerHTML = '';
   lineElements = [];
 
+  const fragment = document.createDocumentFragment();
   lines.forEach((line) => {
     const p = document.createElement('p');
     p.className = 'lyric-line';
-    p.textContent = line.text;
-    lyricsList.appendChild(p);
+    // Reserve the final text metrics; animate only the inner visual layer.
+    // Changing font-size/weight on .active used to reflow and re-wrap the list
+    // after centerActiveLine had measured it, causing the upstream jump.
+    const text = document.createElement('span');
+    text.className = 'lyric-text';
+    text.textContent = line.text;
+    p.appendChild(text);
+    fragment.appendChild(p);
     lineElements.push(p);
   });
+  lyricsList.appendChild(fragment);
+  centerActiveLine();
 }
 
 // 把当前播放行滚动/居中到窗口中间
 function centerActiveLine() {
-  if (currentIndex < 0 || !lineElements[currentIndex]) return;
-
-  const activeEl = lineElements[currentIndex];
+  // Before the first timestamp, show the first line without highlighting it.
+  const activeEl = lineElements[Math.max(0, currentIndex)];
+  if (!activeEl) return;
   const viewportHeight = lyricsViewport.clientHeight;
   const offset = activeEl.offsetTop + activeEl.offsetHeight / 2 - viewportHeight / 2;
 
@@ -93,15 +124,13 @@ function findActiveIndex(progressMs) {
   if (currentLines.length === 0) return -1;
   const progressSec = progressMs / 1000;
 
-  let idx = -1;
-  for (let i = 0; i < currentLines.length; i++) {
-    if (currentLines[i].time <= progressSec) {
-      idx = i;
-    } else {
-      break;
-    }
+  let low = 0, high = currentLines.length;
+  while (low < high) {
+    const mid = (low + high) >>> 1;
+    if (currentLines[mid].time <= progressSec) low = mid + 1;
+    else high = mid;
   }
-  return idx;
+  return low - 1;
 }
 
 window.lyricsAPI.onLyricsUpdate(({ title, artist, found, lines }) => {
@@ -114,9 +143,10 @@ window.lyricsAPI.onLyricsUpdate(({ title, artist, found, lines }) => {
   }
 });
 
-window.lyricsAPI.onProgressTick(({ progressMs, isPlaying }) => {
+window.lyricsAPI.onProgressTick(({ progressMs, index, isPlaying }) => {
+  document.documentElement.dataset.playing = String(!!isPlaying);
   if (currentLines.length === 0) return;
-  const idx = findActiveIndex(progressMs);
+  const idx = Number.isInteger(index) ? Math.max(-1, Math.min(currentLines.length - 1, index)) : findActiveIndex(progressMs);
   setActiveIndex(idx);
 });
 
@@ -162,3 +192,6 @@ function hexToRgb(hex) {
 }
 
 window.addEventListener('resize', centerActiveLine);
+// Font controls and wrapping on resize must also update the scroll target.
+new ResizeObserver(centerActiveLine).observe(lyricsViewport);
+document.fonts.ready.then(centerActiveLine);
