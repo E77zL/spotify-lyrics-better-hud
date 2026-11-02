@@ -4,6 +4,10 @@
 
 [下载 1.2](https://github.com/E77zL/spotify-lyrics-better-hud/releases) · [原作者项目](https://github.com/Fanbeixi/spotify-lyrics-HUD_CN)
 
+## 效果展示
+<img width="1500" height="1000" alt="image" src="https://github.com/user-attachments/assets/8fcde938-c67e-45d6-b507-bc0b4bc1a535" />
+
+
 ## 安装与使用
 
 支持 Windows x64、Spotify 官网桌面版。下载 Release 中的 **Spotify-Lyrics-HUD-Setup-v1.2.exe**，单独运行即可；无需附属文件。先登录一次 Spotify，再退出它，运行安装器并选择 `1` 安装/修复。管理员 CMD 与普通权限均支持，管理员调用 Spicetify 时使用其 `--bypass-admin` 参数。
@@ -14,15 +18,8 @@
 
 安装器选项 `2` 停用启动联动与按钮，并保留个人设置和其它扩展；选项 `5` 导出源码及许可证。Spotify 更新后按钮失效时，重新运行安装/修复。
 
-## 1.2 的同步改进
-
-歌词顺序为 **LRCLIB → QQ 音乐 → 网易云音乐**。前一个来源没有可用同步歌词或请求失败时，继续下一个来源；同名歌会校验歌名、歌手、版本和曲长，避免误用搜索第一条。
-
-播放时间优先来自 Spotify 客户端的 `Spicetify.Player.getProgress()`，通过现有的本地认证连接传给 HUD。按歌曲变化、暂停/恢复和跳转及时更新，并在本地用单调时钟推进到下一句。Windows SMTC 的读取时间不再被当作客户端进度的真实时间，迟到的系统事件也不会覆盖有效的客户端时钟。
-
-桥接采样由 Electron 主进程通过 WebSocket 消息触发，避免 Spotify 最小化后的网页定时器节流。连接断开或超过 3.5 秒没有数据时，自动回退到 SMTC；重新连上后恢复客户端时钟。无须把所有歌曲统一强行提前。不同来源的 LRC 自身仍可能有偏移，逐曲按钮可单独修正。升级保留既有手动偏移；先前为补偿全局滞后设过的 `−0.5/−1`，可点击秒数归零后重新判断。
-
-播放协调、歌词匹配、存储和本地控制分模块维护；切歌会取消旧请求，近期成功歌词最多缓存 8 首。隐藏或暂停不保留歌词行切换定时器；桥接连接保留低频保活，以检测恢复、暂停和断线。磁盘设置写入合并，歌词只在行号或播放状态变化时通知页面。Electron 仍是主要内存占用来源。
+## 更新日志
+[查看更新日志](https://github.com/E77zL/spotify-lyrics-better-hud/releases)
 
 ## 从源码构建
 
