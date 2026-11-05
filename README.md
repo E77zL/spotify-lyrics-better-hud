@@ -1,8 +1,11 @@
 # Spotify Lyrics Better HUD
 
 基于 **[Fanbeixi / spotify-lyrics-HUD_CN](https://github.com/Fanbeixi/spotify-lyrics-HUD_CN)** 的衍生项目
+
 在原作者基础上添加Spotify启动联动、图标摁钮开关、网易云兜底和逐曲校时
+
 完整署名见 [CREDITS.md](CREDITS.md)
+
 本仓库的数字版本是衍生版本号，不是原项目的版本号
 
 [下载 1.2.2](https://github.com/E77zL/spotify-lyrics-better-hud/releases) · [原作者项目](https://github.com/Fanbeixi/spotify-lyrics-HUD_CN)
