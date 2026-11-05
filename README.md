@@ -7,8 +7,7 @@
 ## 效果展示
 
 <img width="1500" height="1000" alt="image" src="https://github.com/user-attachments/assets/8fcde938-c67e-45d6-b507-bc0b4bc1a535" />
-
-<img width="630" height="824" alt="112-ezgif com-video-to-gif-converter" src="https://github.com/user-attachments/assets/d586848c-e9e2-405d-a574-b2fd0a00ddc0" />
+<img width="800" height="450" alt="d3500313488a394f041060a4eaf6962d-ezgif com-video-to-gif-converter" src="https://github.com/user-attachments/assets/4d2e6a5c-8a38-406d-b34a-5585d1e6998e" />
 
 ## 安装和使用
 
