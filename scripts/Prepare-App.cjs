@@ -30,4 +30,4 @@ fs.cpSync(path.join(root,'.build/ws/package'),path.join(app,'node_modules/ws'),{
 for(const name of ['HUD-LICENSE.txt'])fs.copyFileSync(path.join(root,'licenses',name),path.join(runtime,name));
 fs.copyFileSync(path.join(root,'NOTICE.txt'),path.join(runtime,'INTEGRATION-NOTICE.txt'));
 fs.cpSync(path.join(root,'licenses'),path.join(runtime,'licenses'),{recursive:true});
-console.log('Prepared Companion 1.2.1 using upstream HUD runtime 5.1.0.');
+console.log('Prepared Companion 1.2.2 using upstream HUD runtime 5.1.0.');

@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld('lyricsAPI', {
   onStatusChange: subscribe('lyrics:status'),
   onSettingsApply: subscribe('settings:apply'),
   onTimingChange: subscribe('lyrics:timing'),
+  onFullscreenLock: subscribe('fullscreen:locked'),
   adjustTiming: deltaMs => ipcRenderer.invoke('lyrics:adjust-timing', deltaMs),
   closeWindow: () => ipcRenderer.send('window:hide'),
   requestResize: size => ipcRenderer.send('window:resize', size),

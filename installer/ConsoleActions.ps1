@@ -96,15 +96,15 @@ try {
         $tokens = $null; $errors = $null
         [System.Management.Automation.Language.Parser]::ParseFile($PSCommandPath, [ref]$tokens, [ref]$errors) | Out-Null
         if ($errors.Count) { throw ($errors | Out-String) }
-        foreach ($name in @('version.dll','Bridge.ps1','SpotifyLyricsHUD-1.2.1.zip','spotify-lyrics-hud.js','HUD-LICENSE.txt')) { if (!(Test-Path -LiteralPath (Join-Path $PSScriptRoot $name))) { throw "Missing payload $name" } }
+        foreach ($name in @('version.dll','Bridge.ps1','SpotifyLyricsHUD-1.2.2.zip','spotify-lyrics-hud.js','HUD-LICENSE.txt')) { if (!(Test-Path -LiteralPath (Join-Path $PSScriptRoot $name))) { throw "Missing payload $name" } }
         $bridgeInfo = (Get-Item -LiteralPath (Join-Path $PSScriptRoot 'version.dll')).VersionInfo
         if ($bridgeInfo.InternalName -ne 'SpotifyLyricsBridge') { throw 'Invalid Spotify process bridge.' }
         $release = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'spicetify-release.json') -Raw | ConvertFrom-Json
         if ((Get-FileHash (Join-Path $PSScriptRoot 'spicetify-windows-x64.zip') -Algorithm SHA256).Hash -ne $release.sha256) { throw 'Spicetify hash mismatch.' }
         Add-Type -AssemblyName System.IO.Compression.FileSystem
-        $zip = [IO.Compression.ZipFile]::OpenRead((Join-Path $PSScriptRoot 'SpotifyLyricsHUD-1.2.1.zip'))
+        $zip = [IO.Compression.ZipFile]::OpenRead((Join-Path $PSScriptRoot 'SpotifyLyricsHUD-1.2.2.zip'))
         try {
-            foreach ($entry in @('Spotify悬浮歌词.exe','resources/app/main.js','resources/app/preload.js','resources/app/src/hud-control.js','resources/app/src/hud-snapshot.js','resources/app/src/nowPlayingTracker.js','resources/app/src/hud-lifetime.js','resources/app/src/hud-playback.js','resources/app/src/playbackClock.js','resources/app/src/hud-offsets.js','resources/app/src/hud-store.js','resources/app/src/json-file.js','resources/app/src/http.js','resources/app/src/matching.js','resources/app/src/qqmusic.js','resources/app/src/netease.js','resources/app/src/lyrics.js')) {
+            foreach ($entry in @('Spotify悬浮歌词.exe','resources/app/main.js','resources/app/preload.js','resources/app/src/hud-control.js','resources/app/src/hud-fullscreen.js','resources/app/src/FullscreenObserver.exe','resources/app/src/hud-snapshot.js','resources/app/src/nowPlayingTracker.js','resources/app/src/hud-lifetime.js','resources/app/src/hud-playback.js','resources/app/src/playbackClock.js','resources/app/src/hud-offsets.js','resources/app/src/hud-store.js','resources/app/src/json-file.js','resources/app/src/http.js','resources/app/src/matching.js','resources/app/src/qqmusic.js','resources/app/src/netease.js','resources/app/src/lyrics.js')) {
                 if (!$zip.GetEntry($entry)) { throw ('HUD archive missing: ' + $entry) }
             }
         } finally { $zip.Dispose() }
@@ -142,7 +142,7 @@ try {
     $configPath = Get-SpicetifyConfig -InitializeIfMissing
     $stamp = Get-Date -Format 'yyyyMMdd-HHmmss-fff'
     Copy-Item -LiteralPath $configPath -Destination ($configPath + '.hud-backup-' + $stamp)
-    Write-Step '3/6' '停用旧歌词组件，安装 Lyrics HUD Companion 1.2.1'
+    Write-Step '3/6' '停用旧歌词组件，安装 Lyrics HUD Companion 1.2.2'
     Stop-Companion; Disable-OldOverlay
     $originalHud = @(Get-Process 'Spotify悬浮歌词' -ErrorAction SilentlyContinue | Where-Object { $_.SessionId -eq [Diagnostics.Process]::GetCurrentProcess().SessionId })
     foreach ($process in $originalHud) {
@@ -159,7 +159,7 @@ try {
     }
     New-Item -ItemType Directory -Path $installRoot -Force | Out-Null
     $stage = Join-Path $installRoot ('HUD.staging-' + $stamp)
-    Expand-Archive -LiteralPath (Join-Path $PSScriptRoot 'SpotifyLyricsHUD-1.2.1.zip') -DestinationPath $stage
+    Expand-Archive -LiteralPath (Join-Path $PSScriptRoot 'SpotifyLyricsHUD-1.2.2.zip') -DestinationPath $stage
     if (!(Test-Path -LiteralPath (Join-Path $stage 'Spotify悬浮歌词.exe'))) { throw 'HUD 解压失败。' }
     $hudDir = Join-Path $installRoot 'HUD'
     if (Test-Path -LiteralPath $hudDir) { Move-Item -LiteralPath $hudDir -Destination (Join-Path $installRoot ('HUD.backup-' + $stamp)) }

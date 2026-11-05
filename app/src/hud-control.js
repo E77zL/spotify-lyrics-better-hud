@@ -8,14 +8,14 @@ const { performance } = require('perf_hooks');
 const { spotifySnapshot } = require('./hud-snapshot');
 const { version } = require('../package.json');
 
-function startHudControl({ app, window, loadEnabled, saveEnabled, refreshTray, connectionFile, onPlayback = () => {}, getTiming = () => null }) {
+function startHudControl({ app, window, loadEnabled, saveEnabled, refreshTray, connectionFile, onPlayback = () => {}, getTiming = () => null, getFullscreenLocked = () => false }) {
   const connection = JSON.parse(fs.readFileSync(connectionFile, 'utf8').replace(/^\uFEFF/, ''));
   if (!/^[a-f0-9]{64}$/.test(connection.token) || !Number.isInteger(connection.port) || connection.port < 1024 || connection.port > 65535) throw new Error('Invalid HUD connection');
   let enabled = loadEnabled() !== false;
   let quitting = false;
   let fadeTimer = null;
   let playbackClient = null;
-  const state = () => ({ type: 'state', enabled, visible: !window.isDestroyed() && window.isVisible(), opacity: window.isDestroyed() ? 0 : window.getOpacity(), version, hud: '5.1.0', integration: 'spotify-process', hostPid: Number(process.env.SPOTIFY_HUD_PARENT_PID) || null, timing: getTiming() });
+  const state = () => ({ type: 'state', enabled, visible: !window.isDestroyed() && window.isVisible(), opacity: window.isDestroyed() ? 0 : window.getOpacity(), version, hud: '5.1.0', integration: 'spotify-process', hostPid: Number(process.env.SPOTIFY_HUD_PARENT_PID) || null, timing: getTiming(), fullscreenLocked: getFullscreenLocked() });
   const broadcast = () => {
     const message = JSON.stringify(state());
     for (const client of sockets.clients) if (client.readyState === WebSocket.OPEN) client.send(message);

@@ -55,6 +55,12 @@ html, body {
   opacity: 1;
 }
 
+.fullscreen-locked .drag-bar {
+  opacity: 0;
+  pointer-events: none;
+  -webkit-app-region: no-drag;
+}
+
 .drag-handle {
   color: rgba(255, 255, 255, 0.4);
   font-size: 14px;

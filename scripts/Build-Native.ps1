@@ -18,11 +18,17 @@ rc /nologo /fo bridge.res "$root\native\bridge.rc"
 if errorlevel 1 exit /b 1
 cl /nologo /LD /MT /O2 /W4 /WX /wd4191 /EHsc /utf-8 /std:c++17 /DUNICODE /D_UNICODE $mode /Fo"bridge.obj" "$root\native\SpotifyLyricsBridge.cpp" bridge.res bcrypt.lib /link /DEF:"$root\native\version.def" /OUT:"version.dll" /INCREMENTAL:NO
 if errorlevel 1 exit /b 1
+cl /nologo /MT /O2 /W4 /WX /EHsc /utf-8 /std:c++17 /DUNICODE /D_UNICODE /Fo"fullscreen.obj" "$root\native\FullscreenObserver.cpp" user32.lib /link /OUT:"FullscreenObserver.exe" /INCREMENTAL:NO
+if errorlevel 1 exit /b 1
 "@
 if ($TestMode) {
     $batch += @"
 
 cl /nologo /MT /O2 /W4 /WX /wd4191 /EHsc /utf-8 /std:c++17 /DUNICODE /D_UNICODE /Fo"fixture.obj" "$root\tests\native-fixture.cpp" version.lib /link /OUT:"SpotifyBridgeTest.exe" /INCREMENTAL:NO
+if errorlevel 1 exit /b 1
+cl /nologo /MT /O2 /W4 /WX /EHsc /utf-8 /std:c++17 /DUNICODE /D_UNICODE /Fo"fullscreen-test.obj" "$root\tests\fullscreen-native.cpp" user32.lib /link /OUT:"FullscreenTest.exe" /INCREMENTAL:NO
+if errorlevel 1 exit /b 1
+FullscreenTest.exe
 if errorlevel 1 exit /b 1
 "@
 }

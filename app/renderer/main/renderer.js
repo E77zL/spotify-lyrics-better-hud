@@ -8,6 +8,10 @@ const timingEarlierBtn = document.getElementById('timingEarlier');
 const timingLaterBtn = document.getElementById('timingLater');
 const timingValue = document.getElementById('timingValue');
 
+window.lyricsAPI.onFullscreenLock(locked => {
+  document.documentElement.classList.toggle('fullscreen-locked', locked);
+});
+
 let currentLines = []; // [{ time, text }]
 let currentIndex = -1;
 let lineElements = []; // 每句歌词的 <p>

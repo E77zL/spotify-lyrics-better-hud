@@ -6,6 +6,7 @@ const { fetchLyrics } = require('./src/lyrics');
 const { startPlayback } = require('./src/hud-playback');
 const { createStore } = require('./src/hud-store');
 const { offsetFile, createOffsetStore } = require('./src/hud-offsets');
+const { toolWindowOptions, keepOffTaskbar } = require('./src/hud-window');
 
 if (process.env.SPOTIFY_HUD_USER_DATA) app.setPath('userData', process.env.SPOTIFY_HUD_USER_DATA);
 const settingsStore = createStore(path.join(app.getPath('userData'), 'settings.json'), {
@@ -14,7 +15,7 @@ const settingsStore = createStore(path.join(app.getPath('userData'), 'settings.j
 const boundsStore = createStore(path.join(app.getPath('userData'), 'window-state.json'), { width: 420, height: 260 });
 const managed = process.argv.includes('--managed-by-spotify');
 const singleInstance = app.requestSingleInstanceLock();
-let mainWindow, settingsWindow, tray, trayMenu, playback, control;
+let mainWindow, settingsWindow, tray, trayMenu, playback, control, fullscreenGuard;
 let settings = settingsStore.get();
 let offsets;
 try { offsets = createOffsetStore(offsetFile()); }
@@ -45,22 +46,25 @@ function toggleWindow(enabled) {
 
 function openSettings() {
   if (settingsWindow && !settingsWindow.isDestroyed()) { settingsWindow.focus(); return; }
-  settingsWindow = new BrowserWindow({
+  settingsWindow = keepOffTaskbar(new BrowserWindow({
+    ...toolWindowOptions, parent: mainWindow, show: false,
     width: 380, height: 470, useContentSize: true, resizable: false, minimizable: false, maximizable: false,
     alwaysOnTop: true, icon: path.join(__dirname, 'assets/app-icon.png'),
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false },
-  });
+  }));
+  settingsWindow.once('ready-to-show', () => { if (settingsWindow && !settingsWindow.isDestroyed()) settingsWindow.show(); });
   settingsWindow.loadFile(path.join(__dirname, 'renderer/settings/index.html'));
   settingsWindow.on('closed', () => { settingsWindow = null; });
 }
 
 function createWindow() {
-  mainWindow = new BrowserWindow({
+  mainWindow = keepOffTaskbar(new BrowserWindow({
     ...boundsStore.get(), show: false, minWidth: 260, minHeight: 120,
-    frame: false, transparent: true, alwaysOnTop: true, resizable: true, skipTaskbar: true,
+    ...toolWindowOptions,
+    frame: false, transparent: true, alwaysOnTop: true, resizable: true, focusable: false,
     icon: path.join(__dirname, 'assets/app-icon.png'),
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false },
-  });
+  }));
   mainWindow.setAlwaysOnTop(true, 'screen-saver');
   const saveBounds = () => { if (!mainWindow.isDestroyed()) boundsStore.update(mainWindow.getBounds()); };
   mainWindow.on('resize', saveBounds);
@@ -68,6 +72,7 @@ function createWindow() {
   mainWindow.on('show', () => { if (playback) playback.setVisible(true); });
   mainWindow.on('hide', () => { if (playback) playback.setVisible(false); });
   mainWindow.webContents.once('did-finish-load', () => {
+    fullscreenGuard = require('./src/hud-fullscreen').startFullscreenGuard({ app, window: mainWindow });
     applySettings();
     const tracker = new NowPlayingTracker();
     tracker.on('fatal-error', error => {
@@ -83,6 +88,7 @@ function createWindow() {
         refreshTray,
         onPlayback: snapshot => tracker.acceptSpotify(snapshot),
         getTiming: () => tracker.getTimingState(),
+        getFullscreenLocked: () => fullscreenGuard.isLocked(),
       });
     } else mainWindow.showInactive();
     refreshTray();

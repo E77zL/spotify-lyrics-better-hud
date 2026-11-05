@@ -34,14 +34,17 @@ if ($LASTEXITCODE -ne 0) { throw 'Regression checks failed.' }
 $manifest = '/win32manifest:' + (Join-Path $root 'installer/installer.manifest')
 & (Join-Path $root 'scripts/Build-Native.ps1') -OutputDir $payload
 if ($LASTEXITCODE -ne 0) { throw 'Spotify process bridge compilation failed.' }
+Copy-Item -LiteralPath (Join-Path $payload 'FullscreenObserver.exe') -Destination (Join-Path $hud 'resources/app/src/FullscreenObserver.exe')
 & (Join-Path $root 'scripts/Build-Native.ps1') -OutputDir (Join-Path $build 'native-qa') -TestMode
 if ($LASTEXITCODE -ne 0) { throw 'Native test fixture compilation failed.' }
 & node (Join-Path $root 'tests/native.cjs')
 if ($LASTEXITCODE -ne 0) { throw 'Native lifecycle checks failed.' }
+& node (Join-Path $root 'tests/fullscreen-native.cjs')
+if ($LASTEXITCODE -ne 0) { throw 'Fullscreen observer lifecycle checks failed.' }
 & (Join-Path $root 'tests/bridge-install.ps1') -Payload (Join-Path $payload 'version.dll')
 Push-Location $hud
 try {
-    & $archiver a -tzip -mx=5 -bso0 (Join-Path $payload 'SpotifyLyricsHUD-1.2.1.zip') '.\*'
+    & $archiver a -tzip -mx=5 -bso0 (Join-Path $payload 'SpotifyLyricsHUD-1.2.2.zip') '.\*'
     if ($LASTEXITCODE -ne 0) { throw 'HUD packaging failed.' }
 } finally { Pop-Location }
 & node (Join-Path $root 'scripts/Archive-Source.cjs') (Join-Path $payload 'HUD-INTEGRATION-SOURCE.zip') $archiver
@@ -55,10 +58,10 @@ foreach ($name in @('ConsoleActions.ps1','Bridge.ps1')) {
     $actions = Join-Path $payload $name
     [IO.File]::WriteAllText($actions,[IO.File]::ReadAllText($actions),(New-Object Text.UTF8Encoding($true)))
 }
-$files = @('ConsoleActions.ps1','Bridge.ps1','spotify-lyrics-hud.js','version.dll','SpotifyLyricsHUD-1.2.1.zip','HUD-LICENSE.txt','HUD-INTEGRATION-SOURCE.zip','spicetify-windows-x64.zip','spicetify-release.json','SPICETIFY-LICENSE','LICENSE','README.md','spicetify-source-v2.46.4.tar.gz','NOTICE.txt')
+$files = @('ConsoleActions.ps1','Bridge.ps1','spotify-lyrics-hud.js','version.dll','SpotifyLyricsHUD-1.2.2.zip','HUD-LICENSE.txt','HUD-INTEGRATION-SOURCE.zip','spicetify-windows-x64.zip','spicetify-release.json','SPICETIFY-LICENSE','LICENSE','README.md','spicetify-source-v2.46.4.tar.gz','NOTICE.txt')
 $hashes = foreach ($name in $files) { (Get-FileHash -LiteralPath (Join-Path $payload $name) -Algorithm SHA256).Hash.ToLowerInvariant() + '  ' + $name }
 [IO.File]::WriteAllLines((Join-Path $payload 'manifest.sha256'),$hashes,(New-Object Text.UTF8Encoding($false)))
-$output = Join-Path $dist 'Spotify-Lyrics-HUD-Setup-v1.2.1.exe'
+$output = Join-Path $dist 'Spotify-Lyrics-HUD-Setup-v1.2.2.exe'
 $compilerArgs = @('/nologo','/target:exe','/platform:x64','/optimize+','/debug-','/codepage:65001','/utf8output',$manifest,('/out:' + $output))
 foreach ($name in $files + @('manifest.sha256')) { $compilerArgs += '/resource:' + (Join-Path $payload $name) + ',payload.' + $name }
 $compilerArgs += Join-Path $root 'installer/Installer.cs'
@@ -66,7 +69,7 @@ $compilerArgs += Join-Path $root 'installer/Installer.cs'
 if ($LASTEXITCODE -ne 0) { throw 'Installer compilation failed.' }
 & $output --self-test
 if ($LASTEXITCODE -ne 0) { throw 'Installer self-test failed.' }
-Copy-Item -LiteralPath (Join-Path $payload 'HUD-INTEGRATION-SOURCE.zip') -Destination (Join-Path $dist 'Spotify-Lyrics-HUD-Source-v1.2.1.zip') -Force
-$releaseHashes = foreach ($name in @('Spotify-Lyrics-HUD-Setup-v1.2.1.exe','Spotify-Lyrics-HUD-Source-v1.2.1.zip')) { (Get-FileHash -LiteralPath (Join-Path $dist $name)).Hash.ToLowerInvariant() + '  ' + $name }
+Copy-Item -LiteralPath (Join-Path $payload 'HUD-INTEGRATION-SOURCE.zip') -Destination (Join-Path $dist 'Spotify-Lyrics-HUD-Source-v1.2.2.zip') -Force
+$releaseHashes = foreach ($name in @('Spotify-Lyrics-HUD-Setup-v1.2.2.exe','Spotify-Lyrics-HUD-Source-v1.2.2.zip')) { (Get-FileHash -LiteralPath (Join-Path $dist $name)).Hash.ToLowerInvariant() + '  ' + $name }
 [IO.File]::WriteAllLines((Join-Path $dist 'SHA256SUMS.txt'),$releaseHashes,(New-Object Text.UTF8Encoding($false)))
 Write-Host ('Build complete: ' + $dist) -ForegroundColor Green

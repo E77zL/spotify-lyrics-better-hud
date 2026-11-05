@@ -1,8 +1,8 @@
 {
   "name": "spotify-lyrics-hud-companion",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "private": true,
   "main": "main.js",
   "license": "MIT",
-  "description": "Spotify Lyrics HUD Companion 1.2.1; based on Fanbeixi HUD 5.1.0"
+  "description": "Spotify Lyrics HUD Companion 1.2.2; based on Fanbeixi HUD 5.1.0"
 }

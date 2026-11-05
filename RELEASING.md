@@ -11,8 +11,8 @@
 ## 发布可执行文件
 
 1. 仓库选择 **Releases → Draft a new release**。
-2. 创建标签 **v1.2.1**，标题可写 `Spotify Lyrics HUD Companion 1.2.1`。
-3. 上传 `Spotify-Lyrics-HUD-Setup-v1.2.1.exe`、`Spotify-Lyrics-HUD-Source-v1.2.1.zip` 和 `SHA256SUMS.txt`。
+2. 创建标签 **v1.2.2**，标题可写 `Spotify Lyrics HUD Companion 1.2.2`。
+3. 上传 `Spotify-Lyrics-HUD-Setup-v1.2.2.exe`、`Spotify-Lyrics-HUD-Source-v1.2.2.zip` 和 `SHA256SUMS.txt`。
 4. 在说明中写明这是基于 Fanbeixi 项目的衍生集成，并粘贴下方署名段落。
 
 单文件 EXE 超过普通 Git 仓库的 100 MB 文件限制，应放在 **Release 附件**中。项目附带的 GitHub Actions 工作流只构建和上传运行产物，不会自动公开发布 Release；在 Actions 中手动运行即可获取编译结果。

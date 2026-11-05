@@ -1,8 +1,8 @@
-# Spotify Lyrics Better HUD 1.2.1
+# Spotify Lyrics Better HUD 1.2.2
 
-基于 **[Fanbeixi / spotify-lyrics-HUD_CN](https://github.com/Fanbeixi/spotify-lyrics-HUD_CN)** 的衍生项目，使用原作者 HUD 5.1.0 的窗口、设置界面与原生 SMTC 依赖，并添加 Windows Spotify 启动联动、A 按钮、网易云兜底和逐曲校时。感谢原作者提供的实现；完整署名见 [CREDITS.md](CREDITS.md)。本仓库的 **1.2.1** 是衍生版本号，不是原项目的版本号。
+基于 **[Fanbeixi / spotify-lyrics-HUD_CN](https://github.com/Fanbeixi/spotify-lyrics-HUD_CN)** 的衍生项目，使用原作者 HUD 5.1.0 的窗口、设置界面与原生 SMTC 依赖，并添加 Windows Spotify 启动联动、A 按钮、网易云兜底和逐曲校时。感谢原作者提供的实现；完整署名见 [CREDITS.md](CREDITS.md)。本仓库的 **1.2.2** 是衍生版本号，不是原项目的版本号。
 
-[下载 1.2.1](https://github.com/E77zL/spotify-lyrics-better-hud/releases) · [原作者项目](https://github.com/Fanbeixi/spotify-lyrics-HUD_CN)
+[下载 1.2.2](https://github.com/E77zL/spotify-lyrics-better-hud/releases) · [原作者项目](https://github.com/Fanbeixi/spotify-lyrics-HUD_CN)
 
 ## 效果展示
 
@@ -10,7 +10,7 @@
 
 ## 安装与使用
 
-支持 Windows x64、Spotify 官网桌面版。下载 Release 中的 **Spotify-Lyrics-HUD-Setup-v1.2.1.exe**，单独运行即可；无需附属文件。先登录一次 Spotify，再退出它，运行安装器并选择 `1` 安装/修复。管理员 CMD 与普通权限均支持，管理员调用 Spicetify 时使用其 `--bypass-admin` 参数。
+支持 Windows x64、Spotify 官网桌面版。下载 Release 中的 **Spotify-Lyrics-HUD-Setup-v1.2.2.exe**，单独运行即可；无需附属文件。先登录一次 Spotify，再退出它，运行安装器并选择 `1` 安装/修复。管理员 CMD 与普通权限均支持，管理员调用 Spicetify 时使用其 `--bypass-admin` 参数。
 
 打开 Spotify 后，麦克风左侧的 **A** 按钮开关桌面歌词。窗口可拖动、缩放；右键歌词托盘图标打开颜色与透明度设置。Spotify 进程内的原生模块直接启动 HUD，歌词由 Electron 子进程显示；Spotify 退出时连接立即断开并关闭歌词。没有独立常驻 Launcher、开机监视程序或自动更新器。
 
@@ -22,7 +22,9 @@
 
 ## 更新日志
 
-1.2.1 改进 Spotify 进程内联动、主动退出、设置原子保存和安装回滚，修复设置页面裁切及预设颜色不同步。原有 LRCLIB → QQ → 网易云、客户端进度同步和逐曲校时继续保留。
+1.2.2 添加自动全屏穿透：全屏或无边框全屏应用位于前台时，歌词继续显示，但鼠标点击直接交给下方应用，歌词不能抢焦点或弹出悬停按钮；切回普通窗口、普通最大化窗口或桌面后恢复操作。此功能默认启用，支持多显示器，不需要手动切换。独占全屏游戏是否能显示桌面叠加层仍取决于游戏的呈现模式。
+
+检测组件随歌词窗口启动和退出，不使用鼠标键盘钩子，不修改游戏、系统光标或光标锁定。游戏原本隐藏的光标不会因为悬停歌词而显示；普通全屏软件原有的光标保持原样。
 
 [查看更新日志](https://github.com/E77zL/spotify-lyrics-better-hud/releases) · [完整改动](CHANGELOG.md)
 
@@ -36,8 +38,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Build.ps1
 
 脚本下载 `dependencies.lock.json` 锁定的依赖并校验 SHA256，提取原作者运行时、复制本仓库唯一的 `app/` 源码，运行回归测试，编译 C++ 进程模块和 C# 控制台安装器，再执行安装器自检。结果在 `dist/`：
 
-- `Spotify-Lyrics-HUD-Setup-v1.2.1.exe`：可独立分发的安装/加载器。
-- `Spotify-Lyrics-HUD-Source-v1.2.1.zip`：可上传 GitHub 的源码、构建脚本与许可。
+- `Spotify-Lyrics-HUD-Setup-v1.2.2.exe`：可独立分发的安装/加载器。
+- `Spotify-Lyrics-HUD-Source-v1.2.2.zip`：可上传 GitHub 的源码、构建脚本与许可。
 - `SHA256SUMS.txt`：下载校验值。
 
 首次构建需要访问 GitHub 和 npm。使用代理时推荐 Node.js 24.5+，下载器会使用现有的 `HTTPS_PROXY/HTTP_PROXY/NO_PROXY` 配置。已缓存依赖后可离线重建：`Build.ps1 -CacheDir <缓存目录>`。构建不安装或修改本机 Spotify。再次运行测试可执行 `npm test`，无需额外 `npm install`。首次应先完整构建以准备测试依赖。

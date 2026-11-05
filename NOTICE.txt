@@ -1,4 +1,4 @@
-Spotify Lyrics HUD Companion 1.2.1
+Spotify Lyrics HUD Companion 1.2.2
 
 Derived from Fanbeixi/spotify-lyrics-HUD_CN, HUD release 5.1.0 (MIT).
 https://github.com/Fanbeixi/spotify-lyrics-HUD_CN
@@ -9,8 +9,9 @@ original author's release. Original MIT text is preserved in licenses/HUD-LICENS
 Integration changes: Spotify lifecycle attachment through an in-process native module,
 authenticated loopback controls and playback-clock bridge, A button, quick fades,
 stable lyric zoom, NetEase fallback, strict track matching, local-file handling,
-per-song timing, request cancellation, bounded caching and coalesced settings writes.
-Source is maintained once under app/, extension/ and installer/.
+per-song timing, request cancellation, bounded caching, coalesced settings writes,
+and automatic fullscreen click-through via a small Windows foreground observer.
+Source is maintained once under app/, extension/, native/ and installer/.
 
 Original upstream Windows release SHA256:
 1fb3df8b7bb67d1c150c4a86827091bd2bdecb8cad08ffc27c5124f6d86e93e9
