@@ -7,7 +7,7 @@ for(const file of ['version.dll','SpotifyBridgeTest.exe'])fs.copyFileSync(path.j
 const token=crypto.randomBytes(32).toString('hex'),port=27949;
 fs.writeFileSync(path.join(qa,'connection.json'),JSON.stringify({token,port}));
 fs.writeFileSync(path.join(qa,'LyricsHUD/bridge.ini'),Buffer.concat([Buffer.from([255,254]),Buffer.from('[LyricsHUD]\r\nEnabled=1\r\nInstallRoot='+qa+'\r\n','utf16le')]));
-fs.writeFileSync(path.join(qa,'spotify-lyrics-hud/settings.json'),JSON.stringify({hudEnabled:false}));
+fs.writeFileSync(path.join(qa,'spotify-lyrics-hud/settings.json'),JSON.stringify({hudEnabled:false,transparency:0,opacityCurve:2}));
 const child=spawn(path.join(qa,'SpotifyBridgeTest.exe'),[],{env:{...process.env,HUD_TEST_DIR:qa,APPDATA:qa},stdio:['pipe','pipe','ignore']});
 const click=command=>new Promise((resolve,reject)=>{
  const timeout=setTimeout(()=>reject(Error('Fixture command timed out: '+command)),30000);
@@ -40,6 +40,7 @@ const health=async()=>{let r=await fetch('http://127.0.0.1:'+port+'/health',{hea
   const fps=(frameEnd.frameCount-frameStart.frameCount)/(frameEnd.frameTimeSec-frameStart.frameTimeSec);
   assert(fps>50&&fps<67,'Animation frame cadence: '+fps.toFixed(1));console.log('PASS measured native animation cadence: '+fps.toFixed(1)+' fps');
   assert.equal(frameEnd.uiSurfaceHeight,32);assert.equal(frameEnd.uiTextPaintCount,frameStart.uiTextPaintCount,'Reuse toolbar text while lyrics animate');
+  assert.equal(await click('hitBlank'),'hit','A 0% background must still receive hover and drag in blank areas');
   send({type:'playback',snapshot:{...snapshot,positionSec:42,isPlaying:false}});await delay(500);assert.equal((await health()).positionSec,42);
   send({type:'setEnabled',enabled:true});await delay(300);h=await health();assert(h.visible);assert.equal(h.activeIndex,1);assert.equal(h.painted,true,JSON.stringify(h));assert.equal(h.paintError,0);assert(h.exStyle & 0x80);assert(h.exStyle & 0x08000000);assert.equal(h.exStyle & 0x40000,0);
   assert.equal(h.textRenderer,'DirectWrite grayscale');assert.equal(h.antialias,50);

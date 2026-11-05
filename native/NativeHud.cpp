@@ -205,7 +205,7 @@ struct Hud
         if (form.window)
             GetWindowRect(form.window, &popup);
         Json j = {{"version", HudVersion},
-                  {"uiRevision", "adaptive-multiline"},
+                  {"uiRevision", "adaptive-multiline-hit-test"},
                   {"opacity", glassOpacity},
                   {"timingText", Utf8(HudStyle::OffsetText(delay))},
                   {"flyout",
@@ -481,7 +481,7 @@ struct Hud
             panel.AddArc(w - r * 2 - 1, h - r * 2 - 1, r * 2, r * 2, 0, 90);
             panel.AddArc(0.0f, h - r * 2 - 1, r * 2, r * 2, 90, 90);
             panel.CloseFigure();
-            SolidBrush bg(backgroundColor);
+            SolidBrush bg(HudStyle::InteractiveTint(backgroundColor));
             g.FillPath(&bg, &panel);
             Pen border(Color(static_cast<BYTE>(std::round(40 * HudStyle::GlassOpacity(opacityControl))), 255,
                              255, 255));

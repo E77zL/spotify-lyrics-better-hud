@@ -197,6 +197,8 @@ int wmain()
         form.hide(false);
         assert(saves == baseline + 2 && applied.opacity == 37);
         assert(HudStyle::GlassTint(L"#121214", 0).GetA() == 0);
+        assert(HudStyle::InteractiveTint(HudStyle::GlassTint(L"#121214", 0)).GetA() == 1);
+        assert(HudStyle::InteractiveTint(HudStyle::GlassTint(L"#121214", 100)).GetA() == 255);
         assert(HudStyle::GlassTint(L"#121214", 40).GetA() == 13);
         assert(HudStyle::GlassTint(L"#121214", 100).GetA() == 255);
         assert(HudStyle::OpacityControl(0.05) == 40);

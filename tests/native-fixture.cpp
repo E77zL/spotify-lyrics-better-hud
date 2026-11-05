@@ -81,6 +81,12 @@ int wmain()
         RECT rect{};
         GetWindowRect(window, &rect);
         const auto start = std::chrono::steady_clock::now();
+        if (command == "hitBlank")
+        {
+            const POINT blank{rect.left + 20, rect.top + 45};
+            std::cout << (WindowFromPoint(blank) == window ? "hit" : "pass-through") << std::endl;
+            continue;
+        }
         if (command == "resources")
         {
             FILETIME creation{}, exit{}, kernel{}, user{};

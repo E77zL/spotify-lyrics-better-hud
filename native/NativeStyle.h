@@ -59,4 +59,10 @@ inline Gdiplus::Color GlassTint(const std::wstring &hex, int opacity)
     return Gdiplus::Color(alpha, static_cast<BYTE>(rgb >> 16), static_cast<BYTE>(rgb >> 8),
                           static_cast<BYTE>(rgb));
 }
+inline Gdiplus::Color InteractiveTint(Gdiplus::Color tint)
+{
+    // Layered-window hit testing skips alpha-zero pixels before WM_NCHITTEST.
+    // One alpha step keeps blank areas interactive, including at the 0% setting.
+    return Gdiplus::Color(std::max<BYTE>(1, tint.GetA()), tint.GetR(), tint.GetG(), tint.GetB());
+}
 } // namespace HudStyle

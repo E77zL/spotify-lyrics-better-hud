@@ -135,7 +135,7 @@ try {
     $configPath = Get-SpicetifyConfig -InitializeIfMissing
     $stamp = Get-Date -Format 'yyyyMMdd-HHmmss-fff'
     Copy-Item -LiteralPath $configPath -Destination ($configPath + '.hud-backup-' + $stamp)
-    Write-Step '3/6' '停用旧歌词组件，安装 Lyrics HUD Companion 1.3.3'
+    Write-Step '3/6' '停用旧歌词组件，安装 Lyrics HUD Companion 1.3.4'
     Stop-Companion; Disable-OldOverlay
     $originalHud = @(Get-Process 'Spotify悬浮歌词' -ErrorAction SilentlyContinue | Where-Object { $_.SessionId -eq [Diagnostics.Process]::GetCurrentProcess().SessionId })
     foreach ($process in $originalHud) {

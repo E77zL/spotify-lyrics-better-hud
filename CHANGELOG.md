@@ -1,3 +1,8 @@
+## 1.3.4
+
+- Keep blank areas interactive at 0% background opacity; prevent intermittent hover controls and failed dragging caused by Windows layered-window alpha hit testing. Apply the same fix to settings flyouts; fullscreen-game click-through remains explicit.
+- Keep a minimum 1/255 background alpha for interaction, without changing saved opacity or fullscreen-game click-through.
+
 ## 1.3.3
 
 - Restore multiline lyrics with automatic width-based wrapping and no fixed row limit, including long words and Unicode text.

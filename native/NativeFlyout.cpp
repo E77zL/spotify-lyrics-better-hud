@@ -289,7 +289,7 @@ void NativeFlyout::paint()
     g.SetSmoothingMode(SmoothingModeAntiAlias);
     g.ScaleTransform(dpi, dpi);
     HudDrawing::Rounded(g, RectF(0.5f, 0.5f, FlyoutWidth - 1.0f, rasterHeight / dpi - 1), 14,
-                        GlassTint(current.background, current.opacity),
+                        InteractiveTint(GlassTint(current.background, current.opacity)),
                         Color(static_cast<BYTE>(std::min(44, current.opacity)), 255, 255, 255));
     struct Label
     {
