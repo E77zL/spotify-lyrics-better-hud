@@ -1,39 +1,38 @@
 param([string]$OutputDir = (Join-Path $PSScriptRoot '..\.build\payload'), [switch]$TestMode)
-$ErrorActionPreference = 'Stop'
-$root = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
-$OutputDir = [IO.Path]::GetFullPath($OutputDir)
-$vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
-if (!(Test-Path -LiteralPath $vswhere)) { throw 'Install Visual Studio Build Tools with Desktop development with C++ and the Windows SDK.' }
-$vs = & $vswhere -latest -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
-if (!$vs) { throw 'Visual C++ x64 compiler was not found.' }
-$vcvars = Join-Path $vs 'VC\Auxiliary\Build\vcvars64.bat'
+$ErrorActionPreference='Stop'
+$root=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
+$OutputDir=[IO.Path]::GetFullPath($OutputDir)
+$vswhere=Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+$vs=& $vswhere -latest -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+if(!$vs){throw 'Visual C++ x64 compiler not found.'}
+$vcvars=Join-Path $vs 'VC\Auxiliary\Build\vcvars64.bat'
 New-Item -ItemType Directory -Path $OutputDir -Force | Out-Null
-$mode = if ($TestMode) { '/DHUD_BRIDGE_TEST' } else { '' }
-$batch = @"
+$mode=if($TestMode){'/DHUD_BRIDGE_TEST'}else{''}
+$batch=@"
 @echo off
 call "$vcvars" >nul
-if errorlevel 1 exit /b 1
+if %errorlevel% neq 0 exit /b 1
 cd /d "$OutputDir"
 rc /nologo /fo bridge.res "$root\native\bridge.rc"
-if errorlevel 1 exit /b 1
-cl /nologo /LD /MT /O2 /W4 /WX /wd4191 /EHsc /utf-8 /std:c++17 /DUNICODE /D_UNICODE $mode /Fo"bridge.obj" "$root\native\SpotifyLyricsBridge.cpp" bridge.res bcrypt.lib /link /DEF:"$root\native\version.def" /OUT:"version.dll" /INCREMENTAL:NO
-if errorlevel 1 exit /b 1
-cl /nologo /MT /O2 /W4 /WX /EHsc /utf-8 /std:c++17 /DUNICODE /D_UNICODE /Fo"fullscreen.obj" "$root\native\FullscreenObserver.cpp" user32.lib /link /OUT:"FullscreenObserver.exe" /INCREMENTAL:NO
-if errorlevel 1 exit /b 1
+if %errorlevel% neq 0 exit /b 1
+cl /nologo /LD /MT /O2 /W4 /WX /wd4191 /wd4100 /EHsc /utf-8 /std:c++17 /DUNICODE /D_UNICODE $mode "$root\native\SpotifyLyricsBridge.cpp" "$root\native\NativeHud.cpp" "$root\native\NativeNetwork.cpp" "$root\native\NativeFlyout.cpp" bridge.res bcrypt.lib crypt32.lib winhttp.lib ws2_32.lib gdiplus.lib user32.lib gdi32.lib dwmapi.lib d2d1.lib dwrite.lib windowscodecs.lib ole32.lib /link /DEF:"$root\native\version.def" /OUT:"version.dll" /INCREMENTAL:NO
+if %errorlevel% neq 0 exit /b 1
 "@
-if ($TestMode) {
-    $batch += @"
+if($TestMode){$batch+=@"
 
-cl /nologo /MT /O2 /W4 /WX /wd4191 /EHsc /utf-8 /std:c++17 /DUNICODE /D_UNICODE /Fo"fixture.obj" "$root\tests\native-fixture.cpp" version.lib /link /OUT:"SpotifyBridgeTest.exe" /INCREMENTAL:NO
-if errorlevel 1 exit /b 1
-cl /nologo /MT /O2 /W4 /WX /EHsc /utf-8 /std:c++17 /DUNICODE /D_UNICODE /Fo"fullscreen-test.obj" "$root\tests\fullscreen-native.cpp" user32.lib /link /OUT:"FullscreenTest.exe" /INCREMENTAL:NO
-if errorlevel 1 exit /b 1
+cl /nologo /MT /O2 /W4 /WX /wd4191 /EHsc /utf-8 /std:c++17 /DUNICODE /D_UNICODE "$root\tests\native-fixture.cpp" version.lib user32.lib gdi32.lib psapi.lib /link /OUT:"SpotifyBridgeTest.exe" /INCREMENTAL:NO
+if %errorlevel% neq 0 exit /b 1
+cl /nologo /MT /O2 /W4 /WX /EHsc /utf-8 /std:c++17 /DUNICODE /D_UNICODE "$root\tests\fullscreen-native.cpp" user32.lib /link /OUT:"FullscreenTest.exe" /INCREMENTAL:NO
+if %errorlevel% neq 0 exit /b 1
 FullscreenTest.exe
-if errorlevel 1 exit /b 1
-"@
-}
-$batch += "`r`nexit /b 0`r`n"
-$batchFile = Join-Path $OutputDir 'compile-bridge.cmd'
-[IO.File]::WriteAllText($batchFile,$batch,(New-Object Text.UTF8Encoding($false)))
-& $env:ComSpec /d /c $batchFile
-if ($LASTEXITCODE -ne 0) { throw 'Native Spotify process bridge compilation failed.' }
+if %errorlevel% neq 0 exit /b 1
+cl /nologo /MT /O2 /W4 /WX /EHsc /utf-8 /std:c++17 /DUNICODE /D_UNICODE "$root\tests\native-appearance.cpp" "$root\native\NativeFlyout.cpp" gdiplus.lib d2d1.lib dwrite.lib windowscodecs.lib ole32.lib user32.lib gdi32.lib dwmapi.lib /link /OUT:"AppearanceTest.exe" /INCREMENTAL:NO
+if %errorlevel% neq 0 exit /b 1
+AppearanceTest.exe
+if %errorlevel% neq 0 exit /b 1
+"@}
+$batch+="`r`nexit /b 0`r`n"
+$file=Join-Path $OutputDir 'compile-native.cmd'
+[IO.File]::WriteAllText($file,$batch,(New-Object Text.UTF8Encoding($false)))
+& $env:ComSpec /d /c $file
+if($LASTEXITCODE -ne 0){throw 'Native HUD compilation failed.'}

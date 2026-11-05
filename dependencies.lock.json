@@ -1,10 +1,5 @@
 [
   {
-    "name": "SpotifyLyricsHUD-Setup-5.1.0.exe",
-    "url": "https://github.com/Fanbeixi/spotify-lyrics-HUD_CN/releases/download/v5.1.0/SpotifyLyricsHUD-Setup-5.1.0.exe",
-    "sha256": "1fb3df8b7bb67d1c150c4a86827091bd2bdecb8cad08ffc27c5124f6d86e93e9"
-  },
-  {
     "name": "spicetify-windows-x64.zip",
     "url": "https://github.com/spicetify/cli/releases/download/v2.46.4/spicetify-2.46.4-windows-x64.zip",
     "sha256": "0490380bf59e00c94cf6cb12bfac5152791b91bb8009aceef53c49815b45a56f"

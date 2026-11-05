@@ -5,11 +5,15 @@ assert(/^\d+\.\d+\.\d+$/.test(version));
 assert.equal(require('../app/package.json').version, version);
 const read = file => fs.readFileSync(path.join(root, file), 'utf8');
 const native = read('native/bridge.rc'), installer = read('installer/Installer.cs');
+assert(read('native/NativeVersion.h').includes('HudVersion[] = "' + version + '"'));
+assert(read('native/NativeHud.cpp').includes('{"version", HudVersion}'));
+assert(read('native/NativeNetwork.cpp').includes('Wide(HudVersion)'));
+assert(read('Build.ps1').includes("'package.json'"));
 assert(native.includes('FILEVERSION ' + version.replaceAll('.', ',') + ',0'));
 assert(native.includes('"ProductVersion", "' + version + '"'));
 assert(installer.includes('AssemblyFileVersion("' + version + '.0")'));
 assert(installer.includes('AssemblyVersion("' + version + '.0")'));
-for (const file of ['Build.ps1', 'installer/Installer.cs', 'installer/ConsoleActions.ps1', 'README.md', 'RELEASING.md', '.github/workflows/build.yml']) {
+for (const file of ['installer/Installer.cs', 'installer/ConsoleActions.ps1', 'README.md', 'RELEASING.md', '.github/workflows/build.yml']) {
   assert(read(file).includes(version), file + ': release version missing');
   assert(!/(?<![\d.])1\.2(?!\.\d)/.test(read(file)), file + ': old release label remains');
 }

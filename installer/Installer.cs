@@ -7,11 +7,11 @@ using System.Security.Cryptography;
 using System.Collections.Generic;
 
 [assembly: AssemblyTitle("Spotify Lyrics HUD Companion Setup")]
-[assembly: AssemblyDescription("Spotify startup companion for Fanbeixi Spotify Lyrics HUD 5.1.0")]
+[assembly: AssemblyDescription("Native in-process Spotify lyrics overlay")]
 [assembly: AssemblyCompany("Lyrics HUD integration contributors")]
 [assembly: AssemblyProduct("Spotify Lyrics HUD Companion")]
-[assembly: AssemblyVersion("1.2.2.0")]
-[assembly: AssemblyFileVersion("1.2.2.0")]
+[assembly: AssemblyVersion("1.3.3.0")]
+[assembly: AssemblyFileVersion("1.3.3.0")]
 
 internal static class Installer
 {
@@ -32,11 +32,11 @@ internal static class Installer
         Console.WriteLine();
         Colored("  +----------------------------------------------------+", ConsoleColor.DarkGreen);
         Colored("  |    S P O T I F Y   /   L Y R I C S   H U D         |", ConsoleColor.Green);
-        Colored("  |    COMPANION SETUP v1.2.2 //  HUD 5.1.0           |", ConsoleColor.Green);
+        Colored("  |    NATIVE HUD SETUP v1.3.3 // SAME PROCESS           |", ConsoleColor.Green);
         Colored("  +----------------------------------------------------+", ConsoleColor.DarkGreen);
         Console.WriteLine();
         Console.WriteLine("  Spotify 启动联动 + A 按钮开关 · Windows x64");
-        Colored("  内含 Fanbeixi HUD 5.1.0 和 Spicetify 2.46.4。", ConsoleColor.DarkGray);
+        Colored("  原生 Spotify 歌词窗口；基于 Fanbeixi 歌词逻辑。", ConsoleColor.DarkGray);
         Console.WriteLine();
     }
     private static Stream OpenResource(string name)
@@ -129,10 +129,10 @@ internal static class Installer
         Console.WriteLine("  02  返回主菜单选择 1，等待安装完成。");
         Console.WriteLine("  03  打开 Spotify，麦克风左侧 A 按钮控制 HUD 显示/隐藏。");
         Console.WriteLine();
-        Console.WriteLine("  · 歌词界面和设置采用 Fanbeixi/spotify-lyrics-HUD_CN 5.1.0。");
+        Console.WriteLine("  · 原生歌词窗口由 Spotify.exe 内部承载，沿用上游歌词逻辑。");
         Console.WriteLine("  · LRCLIB → QQ → 网易云，前两个都无可用歌词时才查询网易云。");
-        Console.WriteLine("  · 打开 / 关闭歌词带快速淡入淡出，右键 HUD 托盘图标进入设置。");
-        Console.WriteLine("  · Spotify 运行时启动 HUD，退出后 HUD 自动退出。关闭显示会被记住。");
+        Console.WriteLine("  · 打开 / 关闭歌词带快速淡入淡出，右键歌词窗口或点击齿轮进入设置。");
+        Console.WriteLine("  · 歌词窗口和 Spotify 使用同一 PID，同步结束。关闭显示会被记住。");
         Console.WriteLine("  · 联动模块由 Spotify 本身加载，没有独立常驻启动器或自动更新程序。");
         Console.WriteLine("  · Spotify 更新后扩展失效时，重新运行本程序选择安装 / 修复。");
         Console.WriteLine("  · 此包内置 Spicetify v2.46.4，已有版本会直接沿用。");
@@ -171,7 +171,7 @@ internal static class Installer
         {
             Console.OutputEncoding = new UTF8Encoding(false);
             Console.InputEncoding = Encoding.UTF8;
-            if (!Console.IsOutputRedirected) Console.Title = "Spotify // Lyrics HUD Companion Setup 1.2.2";
+            if (!Console.IsOutputRedirected) Console.Title = "Spotify // Lyrics HUD Companion Setup 1.3.3";
             LoadManifest();
             NoPause = args.Length > 0;
             if (args.Length > 0)
@@ -187,7 +187,7 @@ internal static class Installer
                 if (args[0] == "--install") return RunAction("Install");
                 if (args[0] == "--uninstall") return RunAction("Uninstall");
                 if (args[0] == "--help") { Header(); Instructions(); return 0; }
-                Console.WriteLine("Usage: Spotify-Lyrics-HUD-Setup-v1.2.2.exe [--self-test | --diagnose | --help | --install | --uninstall]");
+                Console.WriteLine("Usage: Spotify-Lyrics-HUD-Setup-v1.3.3.exe [--self-test | --diagnose | --help | --install | --uninstall]");
                 return 2;
             }
             for (;;)

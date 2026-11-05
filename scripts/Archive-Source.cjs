@@ -1,7 +1,7 @@
 'use strict';
 const fs=require('fs'),path=require('path'),{execFileSync}=require('child_process');
 const root=path.resolve(__dirname,'..'),output=path.resolve(process.argv[2]),archiver=path.resolve(process.argv[3]);
-const files=['Build.ps1','package.json','dependencies.lock.json','.gitignore','LICENSE','NOTICE.txt','README.md','CREDITS.md','CHANGELOG.md','RELEASING.md'];
+const files=['.clang-format','Build.ps1','package.json','dependencies.lock.json','.gitignore','LICENSE','NOTICE.txt','README.md','CREDITS.md','CHANGELOG.md','RELEASING.md'];
 function walk(dir){for(const entry of fs.readdirSync(path.join(root,dir),{withFileTypes:true})){
   const relative=dir+'/'+entry.name;
   if(entry.isDirectory()) {if(!['node_modules'].includes(entry.name))walk(relative);}

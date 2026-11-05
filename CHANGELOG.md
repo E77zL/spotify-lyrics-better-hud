@@ -1,3 +1,41 @@
+## 1.3.3
+
+- Restore multiline lyrics with automatic width-based wrapping and no fixed row limit, including long words and Unicode text.
+- Space lyric blocks by their measured height; preserve smooth scrolling and place the breathing underline below the whole active phrase.
+- Fit over-height phrases with a smaller effective font without changing the saved font preference; cache layouts across animation frames and reflow on resize.
+
+## 1.3.2
+
+- Rasterize toolbar text only when it changes, using a 32-pixel surface instead of a full-window surface; skip unnecessary fading layers for UI text.
+- Parse appearance colors on settings changes, cache track labels and ignore unchanged paused playback snapshots.
+- Share the native runtime version and derive release filenames from package.json; retain all 1.3.1 glass, fullscreen, animation and timing behavior.
+- Use explicit ownership when posting transport messages so failed window delivery releases allocated messages.
+
+## 1.3.1
+
+- Replace the modal system drag loop with captured input and frame-paced geometry updates. Keep backdrop blur enabled throughout dragging/resizing, coalesce region changes and redraws, reuse the paused movement surface, and support Escape cancellation.
+- Add a monitor fullscreen toggle with normal window position/size restoration and in-screen flyouts; extend font sizes to 120 px. Soften the slider green, remove the visible provider footer and give timing the same toolbar button dimensions.
+- Pace animation with per-thread high-resolution 60 FPS deadlines and fractional text positioning; retain idle throttling without changing system timer resolution.
+- Use glass sliders for typography, antialiasing and opacity; Tab opens precise input, dragging previews without writing to disk until release. Timing keeps its 0.5-second controls.
+- Expand the old 0–5% tint range to 0–40% of the shared opacity slider. Accept six-digit color codes with or without #.
+
+- Replace the settings gear and standalone settings window with compact Timing, Typography, Opacity and Colors flyouts in the lyric toolbar.
+- Share adjustable 0–100% background opacity between lyrics and flyouts; remove the fixed extra tint, surplus bottom spacing and background-size entry (edge resizing remains).
+- Consolidate per-track timing into one compact number; click to enter seconds or adjust in 0.5-second steps. Align toolbar labels and values at a shared size and baseline.
+- Use rounded glass panels, shared vector icons and DirectWrite typography for every HUD label and input; remove native widget frames and color pickers.
+- Anchor flyouts below the lyrics, or above when screen space is limited; validate and automatically save changes. Support numeric steps, typed values, hex-code paste and Escape.
+- Add adjustable 0–100% grayscale antialiasing; preserve bold lyrics, the green breathing underline, glow and viewport fading.
+- Cache text layouts and drawing surfaces; avoid repainting settled paused lyrics and skip unchanged settings writes.
+- Retain Spotify process hosting, fullscreen click-through, lyric providers and per-track offsets.
+## 1.3.0
+
+- Replace the Electron HUD and fullscreen helper with native windows and threads inside Spotify.exe.
+- Reuse LRCLIB → QQ → NetEase matching in Spotify’s existing renderer.
+- Preserve per-song offsets, colors and saved window geometry.
+- Native tool windows stay off the taskbar; fullscreen games retain mouse input.
+- Remove the bundled Electron runtime and child-process launcher.
+- Preserve the original 700-weight Segoe UI lyrics, 1.6-second green breathing underline, glow and fading viewport edges.
+
 # Changelog
 
 ## 1.2.2

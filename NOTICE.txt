@@ -25,9 +25,12 @@ Official Spicetify Windows x64 archive SHA256:
 
 SMTC native dependency: Coooookies, MIT, https://github.com/LeagueTavern/node-windows-smtc-monitor
 ws: MIT, https://github.com/websockets/ws
-Electron/Chromium licenses remain in the distributed runtime.
+Native 1.3.0 no longer distributes the Electron/Chromium runtime.
 Detailed attribution and complete MIT texts are in CREDITS.md and licenses/.
 HUD-INTEGRATION-SOURCE.zip contains this derivative app and build sources.
 
 Integration/installer: MIT, see LICENSE. This is not an official Spotify product.
 Lyrics belong to their respective rights holders.
+
+1.3.0: native overlay hosted inside Spotify.exe. Original lyric providers retain upstream attribution.
+nlohmann/json v3.11.3 (MIT), copyright Niels Lohmann, see JSON-LICENSE.txt.
