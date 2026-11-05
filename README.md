@@ -8,7 +8,7 @@
 
 <img width="1500" height="1000" alt="image" src="https://github.com/user-attachments/assets/8fcde938-c67e-45d6-b507-bc0b4bc1a535" />
 <img width="800" height="450" alt="d3500313488a394f041060a4eaf6962d-ezgif com-video-to-gif-converter" src="https://github.com/user-attachments/assets/4d2e6a5c-8a38-406d-b34a-5585d1e6998e" />
-
+(上gif展示了会在有软件全屏窗口化的情况下禁用鼠标悬浮在歌词窗口，不包括桌面)
 ## 安装和使用
 
 支持Windows 10以上系统，Spotify官网桌面版
