@@ -19,6 +19,7 @@ struct Hud
     HMODULE module{};
     HWND window{};
     NativeFlyout form;
+    NativeGlass glass;
     NativeFrameClock frames;
     double lastPaintMs = 0, lastRenderTime = 0, nextRenderTime = 0, dragInterval = 1.0 / 120;
     bool appearanceUnsaved = false;
@@ -58,6 +59,19 @@ struct Hud
     uint64_t lyricLayoutRevision = 0;
     int firstVisible = 0, lastVisible = 0;
     double pulse = 0;
+    void releaseCanvas()
+    {
+        if (canvas)
+        {
+            SelectObject(canvas, previousRaster);
+            DeleteObject(raster);
+            DeleteDC(canvas);
+        }
+        canvas = nullptr;
+        raster = previousRaster = nullptr;
+        rasterPixels = nullptr;
+        rasterWidth = rasterHeight = 0;
+    }
     bool saveSettings()
     {
         settings["fontSize"] = fontSize;
@@ -71,18 +85,21 @@ struct Hud
         if (!window)
             return;
         const int opacity = opacityControl;
+        // No compositor is needed until a visible, translucent background is requested.
+        if ((enabled || alpha > 0) && opacity > 0 && opacity < 100)
+            glass.attach(window);
         if (glassWidth == width && glassHeight == height && glassOpacity == opacity)
             return;
         const bool initial = !glassWidth;
         const bool resized = glassWidth != width || glassHeight != height;
-        const bool blurChanged = (glassOpacity > 0) != (opacity > 0);
+        const bool blurChanged = glassOpacity != opacity;
         // SetWindowRgn can synchronously reenter WM_WINDOWPOSCHANGED.
         glassWidth = width;
         glassHeight = height;
         glassOpacity = opacity;
         if (initial)
         {
-            ApplyHudGlass(window, width, height, 16, opacity);
+            ApplyHudCorners(window, width, height, 16);
             ++glassUpdateCount;
             ++regionUpdateCount;
         }
@@ -95,10 +112,10 @@ struct Hud
             }
             if (blurChanged)
             {
-                SetHudBlur(window, opacity > 0);
                 ++glassUpdateCount;
             }
         }
+        glass.sync(16, opacity, alpha);
     }
     void beginSizeMove(bool resizing, POINT pointer)
     {
@@ -205,7 +222,12 @@ struct Hud
         if (form.window)
             GetWindowRect(form.window, &popup);
         Json j = {{"version", HudVersion},
-                  {"uiRevision", "adaptive-multiline-hit-test"},
+                  {"uiRevision", "lightweight-glass"},
+                  {"renderSurfaceBytes", static_cast<uint64_t>(rasterWidth) * rasterHeight * 4 +
+                                             renderer.surfaceBytes() + uiText.surfaceBytes()},
+                  {"glassStrength", glass.strength()},
+                  {"glassHwnd", reinterpret_cast<uintptr_t>(glass.window())},
+                  {"glassError", static_cast<uint32_t>(glass.error())},
                   {"opacity", glassOpacity},
                   {"timingText", Utf8(HudStyle::OffsetText(delay))},
                   {"flyout",
@@ -331,7 +353,7 @@ struct Hud
                 emphasis.clear();
                 lyricCenters.clear();
                 firstVisible = lastVisible = 0;
-                renderer.invalidate();
+                renderer.clearLayouts();
                 index = -1;
                 scroll = 0;
                 status = "No track playing";
@@ -359,7 +381,7 @@ struct Hud
                 emphasis.clear();
                 lyricCenters.clear();
                 firstVisible = lastVisible = 0;
-                renderer.invalidate();
+                renderer.clearLayouts();
                 index = -1;
                 scroll = 0;
                 delay = 0;
@@ -440,12 +462,7 @@ struct Hud
         HDC screen = GetDC(nullptr);
         if (!canvas || rasterWidth != width || rasterHeight != height)
         {
-            if (canvas)
-            {
-                SelectObject(canvas, previousRaster);
-                DeleteObject(raster);
-                DeleteDC(canvas);
-            }
+            releaseCanvas();
             canvas = CreateCompatibleDC(screen);
             BITMAPINFO info{};
             info.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
@@ -570,6 +587,7 @@ struct Hud
                 bool center;
             };
             std::vector<Label> labels;
+            labels.reserve(4);
             if (lines.empty())
                 labels.push_back({Wide(status), w / 2, center, 14, w - 36, Color(160, 245, 245, 240), true});
             if ((hover || form.window) && !locked)
@@ -603,6 +621,7 @@ struct Hud
             if (!labels.empty())
             {
                 std::vector<std::wstring> values;
+                values.reserve(labels.size());
                 for (const auto &label : labels)
                     values.push_back(label.value);
                 const int textHeight = lines.empty() ? height : 32;
@@ -647,6 +666,7 @@ struct Hud
         painted = !!UpdateLayeredWindow(window, screen, &at, &size, canvas, &origin, 0, &blend, ULW_ALPHA);
         paintError = painted ? 0 : GetLastError();
         ReleaseDC(nullptr, screen);
+        glass.sync(16, opacityControl, alpha);
     }
     double tick()
     {
@@ -687,7 +707,7 @@ struct Hud
                     return true;
             return false;
         };
-        const bool motion = playing || animating();
+        const bool motion = (playing && !lines.empty()) || animating();
         if ((enabled || alpha > 0) && (dirty || motion) &&
             (!sizingMoving || frameNow >= nextRenderTime - 0.0001))
         {
@@ -702,7 +722,12 @@ struct Hud
         if (!enabled && alpha <= 0)
         {
             ShowWindow(window, SW_HIDE);
-            health();
+            glass.sync(16, opacityControl, 0);
+            // Fullscreen rasters can otherwise retain tens of MiB after closing the HUD.
+            // Keep layouts, so reopening does not remeasure every lyric.
+            releaseCanvas();
+            renderer.releaseSurface();
+            uiText.releaseSurface();
             return 0.25;
         }
         if (sizingMoving)
@@ -926,6 +951,7 @@ static LRESULT CALLBACK HudProc(HWND window, UINT message, WPARAM w, LPARAM l)
                         hud->x + HudStyle::ToolbarAnchor(hud->width, static_cast<int>(hud->form.kind)));
                 if (!hud->sizingMoving)
                     hud->updateGlass();
+                hud->glass.sync(16, hud->opacityControl, hud->alpha);
             }
             return 0;
         }

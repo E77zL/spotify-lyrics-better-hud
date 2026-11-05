@@ -22,6 +22,8 @@ const health=async()=>{let r=await fetch('http://127.0.0.1:'+port+'/health',{hea
   assert.equal(h.version,require('../package.json').version);
   assert.equal(h.glassUpdateCount,1,'Initialize backdrop once without window-region reentrancy');
   assert.equal(h.regionUpdateCount,1);
+  assert.equal(h.renderSurfaceBytes,0,'Disabled startup should not allocate raster surfaces');
+  assert.equal(h.glassHwnd,0,'Disabled startup should not allocate a composition backdrop');
   assert.equal(JSON.parse(fs.readFileSync(path.join(qa,'host.json'))).forwarding,true);
   assert.equal((await fetch('http://127.0.0.1:'+port+'/health')).status,403);
   const rejected=new WebSocket('ws://127.0.0.1:'+port+'/control?token='+token,{origin:'https://example.com'});
@@ -33,7 +35,12 @@ const health=async()=>{let r=await fetch('http://127.0.0.1:'+port+'/health',{hea
   send({type:'request',id:1,op:'md5',args:'abc'});assert.equal((await receive(1)).result,'900150983cd24fb0d6963f7d28e17f72');
   send({type:'request',id:2,op:'fetch',args:{url:'https://example.com/'}});assert.match((await receive(2)).error,/not allowed/);
   const snapshot={found:true,title:'Wait 4 U',artist:'Westwood',durationSec:180,positionSec:10,isPlaying:true};const key=JSON.stringify([snapshot.title,snapshot.artist,180]);
-  send({type:'playback',snapshot});send({type:'lyrics',key,source:'test',lines:[{time:0,text:'First'},{time:11,text:'Second'}]});
+  send({type:'playback',snapshot});send({type:'setEnabled',enabled:true});await delay(700);
+  const searchingFrames=(await health()).frameCount;await delay(500);
+  assert((await health()).frameCount-searchingFrames<=2,'Playing without lyrics should not repaint continuously');
+  send({type:'setEnabled',enabled:false});
+  send({type:'playback',snapshot});
+  send({type:'lyrics',key,source:'test',lines:[{time:0,text:'First'},{time:11,text:'Second'}]});
   await delay(600);h=await health();assert.equal(h.lineCount,2);assert(h.positionSec>=10.2&&h.positionSec<11.3);
   send({type:'lyrics',key:'stale',source:'bad',lines:[]});await delay(300);assert.equal((await health()).lineCount,2);
   send({type:'setEnabled',enabled:true});await delay(300);await click('typography');await delay(400);const frameStart=await health();await delay(2000);const frameEnd=await health();
@@ -97,6 +104,12 @@ const health=async()=>{let r=await fetch('http://127.0.0.1:'+port+'/health',{hea
   await click('fullscreen');await delay(300);
   send({type:'setEnabled',enabled:false});await delay(500);assert.equal((await health()).visible,false);
   assert.equal((await health()).fullscreen,false);assert.deepEqual((await health()).bounds,normal);
+  assert.equal((await health()).renderSurfaceBytes,0,'Hide releases large raster buffers');
+  const layoutBeforeReopen=(await health()).lyricLayoutCount;
+  send({type:'setEnabled',enabled:true});await delay(500);h=await health();
+  assert(h.visible && h.painted && h.renderSurfaceBytes>0,'Reopen recreates render surfaces');
+  assert.equal(h.lyricLayoutCount,layoutBeforeReopen,'Reopen retains cached lyric layouts');
+  send({type:'setEnabled',enabled:false});await delay(500);
   console.log('PASS fullscreen monitor bounds, usable flyout, restore and disable restoration');
   ws.close();console.log('PASS native host PID, real version API forwarding, authentication/origin, MD5, allowlist, stale-track rejection, interpolation/pause/seek, fade and hide');
  }finally{child.kill();await new Promise(r=>child.once('exit',r));}

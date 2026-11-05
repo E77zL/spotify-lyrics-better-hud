@@ -2,6 +2,7 @@
 #pragma once
 #include "NativeText.h"
 #include "NativeStyle.h"
+#include "NativeGlass.h"
 #include <functional>
 struct HudAppearance
 {
@@ -34,6 +35,7 @@ class NativeFlyout
     std::function<void(const HudAppearance &)> preview;
     HudAppearance dragStart;
     NativeText text;
+    NativeGlass glass;
     std::vector<std::wstring> textValues;
     std::wstring edit, notice;
     int active = -1, rasterWidth = 0, rasterHeight = 0;

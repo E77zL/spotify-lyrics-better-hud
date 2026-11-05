@@ -5,6 +5,7 @@ $ProgressPreference = 'SilentlyContinue'
 $installRoot = Join-Path $env:LOCALAPPDATA 'SpotifyLyricsCompanion'
 $runKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run'
 . (Join-Path $PSScriptRoot 'Bridge.ps1')
+. (Join-Path $PSScriptRoot 'Dependency.ps1')
 
 function Write-Step([string]$Number, [string]$Message) { Write-Host "  [$Number] $Message" -ForegroundColor Green }
 function Find-Spicetify {
@@ -79,9 +80,7 @@ function Ensure-Spicetify {
     $script:Spicetify = Find-Spicetify
     if ($script:Spicetify) { return }
     if ($env:PROCESSOR_ARCHITECTURE -ne 'AMD64') { throw '此包仅支持 Windows x64。' }
-    $release = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'spicetify-release.json') -Raw | ConvertFrom-Json
-    $archive = Join-Path $PSScriptRoot 'spicetify-windows-x64.zip'
-    if ((Get-FileHash $archive -Algorithm SHA256).Hash -ne $release.sha256) { throw 'Spicetify SHA256 校验失败。' }
+    $archive = Get-SpicetifyArchive $PSScriptRoot
     $stage = Join-Path $PSScriptRoot 'spicetify-unpacked'; Expand-Archive -LiteralPath $archive -DestinationPath $stage
     $binary = @(Get-ChildItem -LiteralPath $stage -Filter spicetify.exe -Recurse)
     if ($binary.Count -ne 1) { throw 'Spicetify archive structure is invalid.' }
@@ -100,8 +99,10 @@ try {
         $bridgeInfo = (Get-Item -LiteralPath (Join-Path $PSScriptRoot 'version.dll')).VersionInfo
         if ($bridgeInfo.InternalName -ne 'SpotifyLyricsBridge') { throw 'Invalid Spotify process bridge.' }
         $release = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'spicetify-release.json') -Raw | ConvertFrom-Json
-        if ((Get-FileHash (Join-Path $PSScriptRoot 'spicetify-windows-x64.zip') -Algorithm SHA256).Hash -ne $release.sha256) { throw 'Spicetify hash mismatch.' }
-        Write-Step 'OK' 'PowerShell syntax / native Spotify DLL / Spicetify SHA256'; exit 0
+        $archive = Join-Path $PSScriptRoot 'spicetify-windows-x64.zip'
+        if (Test-Path -LiteralPath $archive) { Get-SpicetifyArchive $PSScriptRoot | Out-Null }
+        elseif ($release.sha256 -notmatch '^[a-f0-9]{64}$') { throw 'Invalid dependency hash.' }
+        Write-Step 'OK' 'PowerShell syntax / native Spotify DLL / pinned Spicetify dependency'; exit 0
     }
     if ($Action -eq 'Diagnose') {
         Write-Step 'INFO' ('Spotify: ' + (Find-Spotify)); Write-Step 'INFO' ('Spicetify: ' + (Find-Spicetify))
@@ -135,7 +136,7 @@ try {
     $configPath = Get-SpicetifyConfig -InitializeIfMissing
     $stamp = Get-Date -Format 'yyyyMMdd-HHmmss-fff'
     Copy-Item -LiteralPath $configPath -Destination ($configPath + '.hud-backup-' + $stamp)
-    Write-Step '3/6' '停用旧歌词组件，安装 Lyrics HUD Companion 1.3.4'
+    Write-Step '3/6' '停用旧歌词组件，安装 Lyrics HUD Companion 1.3.5'
     Stop-Companion; Disable-OldOverlay
     $originalHud = @(Get-Process 'Spotify悬浮歌词' -ErrorAction SilentlyContinue | Where-Object { $_.SessionId -eq [Diagnostics.Process]::GetCurrentProcess().SessionId })
     foreach ($process in $originalHud) {

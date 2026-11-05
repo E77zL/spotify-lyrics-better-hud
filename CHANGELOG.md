@@ -1,5 +1,14 @@
+## 1.3.5
+
+- Compress installer resources with the system .NET decoder. Default to a lightweight single EXE that reuses installed Spicetify or downloads its pinned, SHA256-verified archive on first installation; provide an Offline build with the complete archive. Both include all corresponding source and licenses.
+- Release lyric and toolbar raster surfaces when the HUD finishes fading out, retain layouts for quick reopening, clear stale layouts on track changes, defer unused backdrop creation, and remove duplicate hidden health serialization.
+- Enable whole-program optimization and unused/identical code elimination for the native DLL; reserve known-size layout buffers and avoid rebuilding the provider host allowlist per request.
+
 ## 1.3.4
 
+- Replace the legacy Accent tint workaround with a Windows Composition host-backdrop visual. Blend blur over 0–40% while keeping text and controls crisp; 0% hides the blur, 100% paints solid and skips the covered backdrop. Lyrics and flyouts share the same transition.
+- Slightly increase the low-range glass blend by at most one percentage point; preserve the transparent/solid endpoints and the 40–100% range.
+- Keep all composition windows inside Spotify, off the taskbar and unable to accept input. Reuse one compositor per HUD thread, update properties only when changed, and retain translucent tint if host backdrop is unsupported. No desktop capture or extra rendering process.
 - Keep blank areas interactive at 0% background opacity; prevent intermittent hover controls and failed dragging caused by Windows layered-window alpha hit testing. Apply the same fix to settings flyouts; fullscreen-game click-through remains explicit.
 - Keep a minimum 1/255 background alpha for interaction, without changing saved opacity or fullscreen-game click-through.
 

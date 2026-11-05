@@ -60,6 +60,27 @@ class NativeText
         measuredSize = 0;
         pixelsValid = false;
     }
+    void releaseSurface()
+    {
+        layer.Reset();
+        mask.Reset();
+        brush.Reset();
+        target.Reset();
+        bitmap.Reset();
+        width = height = 0;
+        drawing = pixelsValid = false;
+    }
+    void clearLayouts()
+    {
+        layouts.clear();
+        metrics.clear();
+        fittedSizes.clear();
+        invalidate();
+    }
+    uint64_t surfaceBytes() const
+    {
+        return static_cast<uint64_t>(width) * height * 4;
+    }
     bool prepare(const std::vector<std::wstring> &lines, int size, int wrapWidth = 0, int fitHeight = 0)
     {
         if (!init())
@@ -70,6 +91,9 @@ class NativeText
         std::vector<Com<IDWriteTextLayout>> nextLayouts;
         std::vector<DWRITE_TEXT_METRICS> nextMetrics;
         std::vector<float> nextSizes;
+        nextLayouts.reserve(lines.size());
+        nextMetrics.reserve(lines.size());
+        nextSizes.reserve(lines.size());
         Com<IDWriteTextFormat> format;
         if (FAILED(fonts->CreateTextFormat(HudDrawing::FontName, nullptr, DWRITE_FONT_WEIGHT_BOLD,
                                            DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,

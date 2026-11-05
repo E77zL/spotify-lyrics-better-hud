@@ -10,9 +10,11 @@
 
 ## 发布可执行文件
 
+源码构建需要 Node.js 22+、Visual Studio 2022 或更新版本的 C++ 工具链（C++20）、Windows SDK 10.0.22000+。在仓库根目录运行 `powershell -NoProfile -ExecutionPolicy Bypass -File .\Build.ps1` 生成轻量包，添加 `-Offline` 同时生成内置Spicetify程序包的完整离线版；已有依赖缓存可添加 `-CacheDir <缓存目录>`。两种安装器均内置对应源码和许可证。轻量版仅在没有已安装的Spicetify时下载锁定版本并校验SHA256，不检查新版本。Windows Composition和解压缩由系统提供，无需额外运行库安装包。
+
 1. 仓库选择 **Releases → Draft a new release**。
-2. 创建标签 **v1.3.4**，标题可写 `Spotify Lyrics HUD Companion 1.3.4`。
-3. 上传 `Spotify-Lyrics-HUD-Setup-v1.3.4.exe`、`Spotify-Lyrics-HUD-Source-v1.3.4.zip` 和 `SHA256SUMS.txt`。
+2. 创建标签 **v1.3.5**，标题可写 `Spotify Lyrics HUD Companion 1.3.5`。
+3. 上传 `Spotify-Lyrics-HUD-Setup-v1.3.5.exe`、`Spotify-Lyrics-HUD-Setup-v1.3.5-Offline.exe`、`Spotify-Lyrics-HUD-Source-v1.3.5.zip` 和 `SHA256SUMS.txt`。
 4. 在说明中写明这是基于 Fanbeixi 项目的衍生集成，并粘贴下方署名段落。
 
 编译后的单文件 EXE 应放在 **Release 附件**中，源码提交到 Git 仓库。项目附带的 GitHub Actions 工作流只构建和上传运行产物，不会自动公开发布 Release；在 Actions 中手动运行即可获取编译结果。

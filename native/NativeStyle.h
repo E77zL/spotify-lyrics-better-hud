@@ -18,6 +18,14 @@ inline double GlassOpacity(double percent)
     percent = std::clamp(percent, 0.0, 100.0);
     return (percent <= 40 ? percent / 8 : 5 + (percent - 40) * 95 / 60) / 100;
 }
+inline double GlassStrength(double percent)
+{
+    // Blend only the Composition host backdrop; keep glyphs and controls independent.
+    const double t = std::clamp(percent / 40.0, 0.0, 1.0);
+    const double blend = t * t * (3 - 2 * t);
+    // A subtle lift: at most one percentage point more glass, with identical endpoints.
+    return blend + 0.04 * blend * (1 - blend);
+}
 inline int OpacityControl(double opacity)
 {
     opacity = std::clamp(opacity, 0.0, 1.0);

@@ -1,5 +1,6 @@
 // MIT. Loopback transport and bounded provider requests, hosted by Spotify.exe.
 #include "NativeCore.h"
+#include <string_view>
 struct Internet
 {
     HINTERNET h = nullptr;
@@ -21,13 +22,13 @@ static Json ProviderRequest(const Json &args, const std::shared_ptr<RequestJob> 
         parts.nPort != 443 || parts.dwUserNameLength || parts.dwPasswordLength)
         throw std::runtime_error("Invalid provider URL");
     std::wstring host(parts.lpszHostName, parts.dwHostNameLength);
-    const std::vector<std::wstring> hosts = {L"lrclib.net",
+    static constexpr std::wstring_view hosts[] = {L"lrclib.net",
                                              L"c.y.qq.com",
                                              L"u.y.qq.com",
                                              L"interface.music.163.com",
                                              L"interface3.music.163.com",
                                              L"music.163.com"};
-    if (std::find(hosts.begin(), hosts.end(), host) == hosts.end())
+    if (std::find(std::begin(hosts), std::end(hosts), host) == std::end(hosts))
         throw std::runtime_error("Provider not allowed");
     std::wstring path(parts.lpszUrlPath, parts.dwUrlPathLength);
     if (parts.dwExtraInfoLength)

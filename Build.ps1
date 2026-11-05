@@ -1,4 +1,4 @@
-param([string]$CacheDir = (Join-Path $PSScriptRoot '.cache'))
+param([string]$CacheDir = (Join-Path $PSScriptRoot '.cache'), [switch]$Offline)
 $ErrorActionPreference='Stop'
 $root=$PSScriptRoot
 $version=(Get-Content -LiteralPath (Join-Path $root 'package.json') -Raw | ConvertFrom-Json).version
@@ -33,26 +33,13 @@ foreach($test in @('matching','providers','native-renderer')){
 if($LASTEXITCODE -ne 0){throw 'Native host tests failed.'}
 & (Join-Path $root 'scripts/Build-Native.ps1') -OutputDir $payload
 & (Join-Path $root 'tests/bridge-install.ps1') -Payload (Join-Path $payload 'version.dll')
+& (Join-Path $root 'tests/installer-dependency.ps1')
 & node (Join-Path $root 'scripts/Archive-Source.cjs') (Join-Path $payload 'HUD-INTEGRATION-SOURCE.zip') $archiver
 if($LASTEXITCODE -ne 0){throw 'Source archive failed.'}
-foreach($name in @('ConsoleActions.ps1','Bridge.ps1','spicetify-release.json')){Copy-Item -LiteralPath (Join-Path $root ('installer/'+$name)) -Destination $payload -Force}
+foreach($name in @('ConsoleActions.ps1','Bridge.ps1','Dependency.ps1','spicetify-release.json')){Copy-Item -LiteralPath (Join-Path $root ('installer/'+$name)) -Destination $payload -Force}
 foreach($name in @('HUD-LICENSE.txt','SPICETIFY-LICENSE','JSON-LICENSE.txt')){Copy-Item -LiteralPath (Join-Path $root ('licenses/'+$name)) -Destination $payload -Force}
 foreach($name in @('README.md','NOTICE.txt','LICENSE')){Copy-Item -LiteralPath (Join-Path $root $name) -Destination $payload -Force}
 foreach($name in @('spicetify-windows-x64.zip','spicetify-source-v2.46.4.tar.gz')){Copy-Item -LiteralPath (Join-Path $CacheDir $name) -Destination $payload -Force}
-foreach($name in @('ConsoleActions.ps1','Bridge.ps1')){ $file=Join-Path $payload $name;[IO.File]::WriteAllText($file,[IO.File]::ReadAllText($file),(New-Object Text.UTF8Encoding($true))) }
-$files=@('ConsoleActions.ps1','Bridge.ps1','spotify-lyrics-hud.js','version.dll','HUD-LICENSE.txt','JSON-LICENSE.txt','HUD-INTEGRATION-SOURCE.zip','spicetify-windows-x64.zip','spicetify-release.json','SPICETIFY-LICENSE','LICENSE','README.md','spicetify-source-v2.46.4.tar.gz','NOTICE.txt')
-$hashes=foreach($name in $files){(Get-FileHash -LiteralPath (Join-Path $payload $name)).Hash.ToLowerInvariant()+'  '+$name}
-[IO.File]::WriteAllLines((Join-Path $payload 'manifest.sha256'),$hashes,(New-Object Text.UTF8Encoding($false)))
-$compiler=Join-Path $env:WINDIR 'Microsoft.NET/Framework64/v4.0.30319/csc.exe'
-$output=Join-Path $dist "Spotify-Lyrics-HUD-Setup-v$version.exe"
-$compilerArgs=@('/nologo','/target:exe','/platform:x64','/optimize+','/debug-','/codepage:65001','/utf8output',('/win32manifest:'+(Join-Path $root 'installer/installer.manifest')),('/out:'+$output))
-foreach($name in $files+@('manifest.sha256')){$compilerArgs+='/resource:'+(Join-Path $payload $name)+',payload.'+$name}
-$compilerArgs+=Join-Path $root 'installer/Installer.cs'
-& $compiler @compilerArgs
-if($LASTEXITCODE -ne 0){throw 'Installer compilation failed.'}
-& $output --self-test
-if($LASTEXITCODE -ne 0){throw 'Installer self-test failed.'}
-Copy-Item -LiteralPath (Join-Path $payload 'HUD-INTEGRATION-SOURCE.zip') -Destination (Join-Path $dist "Spotify-Lyrics-HUD-Source-v$version.zip") -Force
-$releaseHashes=foreach($name in @("Spotify-Lyrics-HUD-Setup-v$version.exe","Spotify-Lyrics-HUD-Source-v$version.zip")){(Get-FileHash -LiteralPath (Join-Path $dist $name)).Hash.ToLowerInvariant()+'  '+$name}
-[IO.File]::WriteAllLines((Join-Path $dist 'SHA256SUMS.txt'),$releaseHashes,(New-Object Text.UTF8Encoding($false)))
+foreach($name in @('ConsoleActions.ps1','Bridge.ps1','Dependency.ps1')){ $file=Join-Path $payload $name;[IO.File]::WriteAllText($file,[IO.File]::ReadAllText($file),(New-Object Text.UTF8Encoding($true))) }
+& (Join-Path $root 'scripts/Pack-Installer.ps1') -Offline:$Offline
 Write-Host ("Native $version build complete: "+$dist) -ForegroundColor Green

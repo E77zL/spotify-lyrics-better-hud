@@ -28,6 +28,7 @@ async function measure(label,dll,fullscreen,port){
   let ready=false;
   for(let i=0;i<80;i++){try{await health();ready=true;break;}catch{await delay(100);}}
   if(!ready)throw Error('Fixture did not start');
+  const startup=JSON.parse(await command('resources'));
   ws=new WebSocket('ws://127.0.0.1:'+port+'/control?token='+token,{origin:'https://xpui.app.spotify.com'});
   await new Promise((resolve,reject)=>{ws.once('open',resolve);ws.once('error',reject);});
   const snapshot={found:true,title:'Performance fixture',artist:'Native HUD',durationSec:180,positionSec:10,isPlaying:true};
@@ -43,12 +44,18 @@ async function measure(label,dll,fullscreen,port){
   for(let i=0;i<20;i++){await delay(200);samples.push(await health());}
   const after=JSON.parse(await command('resources')),end=await health();
   const seconds=end.frameTimeSec-start.frameTimeSec;
+  send({type:'setEnabled',enabled:false});await delay(800);
+  const hidden=JSON.parse(await command('resources')),hiddenHealth=await health();
   const result={version:end.version,scenario:fullscreen?'fullscreen':'normal',bounds:end.bounds,
    cpuMsPerSecond:+((after.cpuMs-before.cpuMs)/seconds).toFixed(2),
    privateMiB:+(after.privateBytes/1048576).toFixed(2),
+   disabledStartupPrivateMiB:+(startup.privateBytes/1048576).toFixed(2),
+   hiddenPrivateMiB:+(hidden.privateBytes/1048576).toFixed(2),
+   hiddenRenderSurfaceBytes:hiddenHealth.renderSurfaceBytes??null,
    fps:+((end.frameCount-start.frameCount)/seconds).toFixed(2),
    meanSampledPaintMs:+(samples.reduce((sum,h)=>sum+h.lastPaintMs,0)/samples.length).toFixed(3),
-   toolbarRasters:end.uiTextPaintCount===undefined?null:end.uiTextPaintCount-start.uiTextPaintCount};
+   toolbarRasters:end.uiTextPaintCount===undefined?null:end.uiTextPaintCount-start.uiTextPaintCount,
+   compositionBackdrop:!!end.glassHwnd,glassError:end.glassError??null};
   console.log(label+': '+JSON.stringify(result));return result;
  }finally{
   ws?.terminate();lines.close();child.kill();await new Promise(resolve=>child.once('exit',resolve));

@@ -54,6 +54,13 @@ int wmain()
         assert(balanced != smooth);
         assert(Render(renderer, 50) == balanced);
         assert(Render(renderer, 50, 420, 24, true) == balanced);
+        const auto cachedRevision = renderer.revision();
+        assert(renderer.surfaceBytes() == 420 * 160 * 4);
+        renderer.releaseSurface();
+        assert(renderer.surfaceBytes() == 0);
+        assert(renderer.prepare({L"Small bold lyrics — 夜空"}, 14));
+        assert(renderer.revision() == cachedRevision);
+        assert(Render(renderer, 50) == balanced);
         assert(Render(renderer, 50, 420, 24.1f) != Render(renderer, 50, 420, 24.4f));
         assert(Render(renderer, 50, 800).size() == 800 * 160 * 4);
         renderer.invalidate();
@@ -196,6 +203,20 @@ int wmain()
         click(22, 76);
         form.hide(false);
         assert(saves == baseline + 2 && applied.opacity == 37);
+        assert(HudStyle::GlassStrength(0) == 0);
+        assert(HudStyle::GlassStrength(1) < 0.002);
+        assert(std::abs(HudStyle::GlassStrength(20) - 0.51) < 0.000001);
+        assert(HudStyle::GlassStrength(40) == 1);
+        for (int value = 1; value <= 100; ++value)
+        {
+            assert(HudStyle::GlassStrength(value) >= HudStyle::GlassStrength(value - 1));
+            assert(HudStyle::GlassStrength(value) - HudStyle::GlassStrength(value - 1) < 0.038);
+            if (value >= 40)
+                assert(HudStyle::GlassStrength(value) == 1);
+        }
+        assert(static_cast<BYTE>(std::round(255 * HudStyle::GlassStrength(0))) == 0);
+        assert(static_cast<BYTE>(std::round(255 * HudStyle::GlassStrength(1))) == 0);
+        assert(static_cast<BYTE>(std::round(255 * HudStyle::GlassStrength(4))) > 0);
         assert(HudStyle::GlassTint(L"#121214", 0).GetA() == 0);
         assert(HudStyle::InteractiveTint(HudStyle::GlassTint(L"#121214", 0)).GetA() == 1);
         assert(HudStyle::InteractiveTint(HudStyle::GlassTint(L"#121214", 100)).GetA() == 255);
@@ -204,6 +225,52 @@ int wmain()
         assert(HudStyle::OpacityControl(0.05) == 40);
         assert(HudStyle::OpacityControl(0.0) == 0);
         assert(HudStyle::OpacityControl(1.0) == 100);
+        // Exercise a real host-backdrop visual without changing foreground opacity or input.
+        HWND host = CreateWindowExW(WS_EX_LAYERED | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE, L"STATIC",
+                                    L"Composition QA", WS_POPUP, 100, 100, 300, 140, nullptr, nullptr,
+                                    GetModuleHandleW(nullptr), nullptr);
+        assert(host);
+        SetLayeredWindowAttributes(host, 0, 255, LWA_ALPHA);
+        ShowWindow(host, SW_SHOWNOACTIVATE);
+        NativeGlass composition;
+        composition.attach(host);
+        const HWND backdrop = composition.window();
+        printf("Composition backdrop: %s (%08lx)\n", backdrop ? "active" : "unavailable",
+               composition.error());
+        if (backdrop)
+        {
+            assert(GetWindow(host, GW_OWNER) == backdrop);
+            const auto ex = GetWindowLongPtrW(backdrop, GWL_EXSTYLE);
+            assert(!IsWindowEnabled(backdrop));
+            assert((ex & (WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE | WS_EX_TRANSPARENT)) ==
+                   (WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE | WS_EX_TRANSPARENT));
+            for (int value : {0, 1, 5, 10, 20, 30, 39, 40, 60, 99, 100})
+            {
+                composition.sync(16, value);
+                const double expected = value == 100 ? 0 : HudStyle::GlassStrength(value);
+                assert(std::abs(composition.strength() - expected) < 0.000001);
+                assert(!!IsWindowVisible(backdrop) == (expected > 0));
+                assert(IsWindowVisible(host));
+                assert(GetForegroundWindow() != backdrop);
+            }
+            composition.sync(16, 20, 0.5);
+            assert(std::abs(composition.strength() - 0.255) < 0.000001);
+            // Game click-through must not stop on the new compositor surface.
+            SetWindowLongPtrW(host, GWL_EXSTYLE, GetWindowLongPtrW(host, GWL_EXSTYLE) | WS_EX_TRANSPARENT);
+            assert(WindowFromPoint({150, 150}) != backdrop);
+            SetWindowPos(host, nullptr, 170, 180, 450, 220, SWP_NOZORDER | SWP_NOACTIVATE);
+            composition.sync(16, 20);
+            RECT frontBounds{}, backBounds{};
+            GetWindowRect(host, &frontBounds);
+            GetWindowRect(backdrop, &backBounds);
+            assert(EqualRect(&frontBounds, &backBounds));
+            ShowWindow(host, SW_HIDE);
+            composition.sync(16, 20);
+            assert(!IsWindowVisible(backdrop));
+            composition.release();
+            assert(!IsWindow(backdrop) && IsWindow(host) && !GetWindow(host, GW_OWNER));
+        }
+        DestroyWindow(host);
         form.show(GetModuleHandleW(nullptr), nullptr, lyrics, 700, FlyoutKind::Typography, applied, onApply);
         enter(0, L"96");
         assert(applied.fontSize == 96);

@@ -88,6 +88,7 @@ void NativeFlyout::show(HMODULE instance, HWND parent, RECT lyrics, int anchorX,
     if (!window)
         return;
     dpi = GetDpiForWindow(window) / 96.0f;
+    glass.attach(window);
     reposition(lyrics, anchorX);
     ShowWindow(window, SW_SHOW);
     SetForegroundWindow(window);
@@ -115,7 +116,8 @@ void NativeFlyout::reposition(RECT lyrics, int anchorX)
         y, static_cast<int>(info.rcWork.top),
         std::max(static_cast<int>(info.rcWork.top), static_cast<int>(info.rcWork.bottom) - rasterHeight));
     SetWindowPos(window, HWND_TOPMOST, x, y, rasterWidth, rasterHeight, SWP_NOACTIVATE);
-    ApplyHudGlass(window, rasterWidth, rasterHeight, px(14), current.opacity);
+    ApplyHudCorners(window, rasterWidth, rasterHeight, px(14));
+    glass.sync(px(14), current.opacity);
 }
 bool NativeFlyout::commit(bool report)
 {
@@ -186,7 +188,7 @@ bool NativeFlyout::commit(bool report)
     }
     notice.clear();
     if (previous.opacity != current.opacity)
-        ApplyHudGlass(window, rasterWidth, rasterHeight, px(14), current.opacity);
+        glass.sync(px(14), current.opacity);
     paint();
     return true;
 }
@@ -220,7 +222,7 @@ void NativeFlyout::slide(float x)
     if (preview)
         preview(current);
     if (kind == FlyoutKind::Opacity)
-        ApplyHudGlass(window, rasterWidth, rasterHeight, px(14), current.opacity);
+        glass.sync(px(14), current.opacity);
     paint();
 }
 void NativeFlyout::finishSlide(bool save)
@@ -239,7 +241,7 @@ void NativeFlyout::finishSlide(bool save)
         notice = std::move(error);
     }
     if (kind == FlyoutKind::Opacity)
-        ApplyHudGlass(window, rasterWidth, rasterHeight, px(14), current.opacity);
+        glass.sync(px(14), current.opacity);
     paint();
 }
 void NativeFlyout::hide(bool applyPending)
@@ -385,6 +387,7 @@ void NativeFlyout::paint()
     BLENDFUNCTION blend{AC_SRC_OVER, 0, 255, AC_SRC_ALPHA};
     UpdateLayeredWindow(window, screen, &at, &size, canvas, &origin, 0, &blend, ULW_ALPHA);
     ReleaseDC(nullptr, screen);
+    glass.sync(px(14), current.opacity);
 }
 LRESULT CALLBACK NativeFlyout::Proc(HWND hwnd, UINT message, WPARAM w, LPARAM l)
 {
@@ -424,9 +427,11 @@ LRESULT NativeFlyout::dispatch(UINT message, WPARAM w, LPARAM l)
     case WM_NCDESTROY: {
         HWND old = window;
         window = nullptr;
+        glass.release();
         fields.clear();
         active = -1;
         releaseCanvas();
+        text.releaseSurface();
         if (IsWindow(owner))
             PostMessageW(owner, HudStyle::AppearanceChanged, 0, 0);
         SetWindowLongPtrW(old, GWLP_USERDATA, 0);

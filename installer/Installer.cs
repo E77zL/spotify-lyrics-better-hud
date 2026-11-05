@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.IO.Compression;
 using System.Text;
 using System.Reflection;
 using System.Diagnostics;
@@ -10,8 +11,8 @@ using System.Collections.Generic;
 [assembly: AssemblyDescription("Native in-process Spotify lyrics overlay")]
 [assembly: AssemblyCompany("Lyrics HUD integration contributors")]
 [assembly: AssemblyProduct("Spotify Lyrics HUD Companion")]
-[assembly: AssemblyVersion("1.3.4.0")]
-[assembly: AssemblyFileVersion("1.3.4.0")]
+[assembly: AssemblyVersion("1.3.5.0")]
+[assembly: AssemblyFileVersion("1.3.5.0")]
 
 internal static class Installer
 {
@@ -32,7 +33,7 @@ internal static class Installer
         Console.WriteLine();
         Colored("  +----------------------------------------------------+", ConsoleColor.DarkGreen);
         Colored("  |    S P O T I F Y   /   L Y R I C S   H U D         |", ConsoleColor.Green);
-        Colored("  |    NATIVE HUD SETUP v1.3.4 // SAME PROCESS           |", ConsoleColor.Green);
+        Colored("  |    NATIVE HUD SETUP v1.3.5 // SAME PROCESS           |", ConsoleColor.Green);
         Colored("  +----------------------------------------------------+", ConsoleColor.DarkGreen);
         Console.WriteLine();
         Console.WriteLine("  Spotify 启动联动 + A 按钮开关 · Windows x64");
@@ -43,7 +44,11 @@ internal static class Installer
     {
         Stream stream = Self.GetManifestResourceStream("payload." + name);
         if (stream == null) throw new InvalidDataException("Missing payload: " + name);
-        return stream;
+        return new DeflateStream(stream, CompressionMode.Decompress);
+    }
+    private static bool HasResource(string name)
+    {
+        using (Stream stream = Self.GetManifestResourceStream("payload." + name)) return stream != null;
     }
     private static void LoadManifest()
     {
@@ -58,7 +63,7 @@ internal static class Installer
                 throw new InvalidDataException("Unsafe payload name");
             Hashes.Add(name, row.Substring(0, split));
         }
-        if (Hashes.Count != 14) throw new InvalidDataException("Unexpected payload count");
+        if (Hashes.Count != 15) throw new InvalidDataException("Unexpected payload count");
     }
     private static void CopyVerified(string name, Stream destination)
     {
@@ -96,7 +101,8 @@ internal static class Installer
         Directory.CreateDirectory(temp);
         try
         {
-            foreach (string name in Hashes.Keys) ExtractVerified(name, Path.Combine(temp, name));
+            foreach (string name in Hashes.Keys)
+                if (HasResource(name)) ExtractVerified(name, Path.Combine(temp, name));
             string powershell = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "WindowsPowerShell", "v1.0", "powershell.exe");
             if (!File.Exists(powershell)) throw new FileNotFoundException("Windows PowerShell 5.1 is required.");
             ProcessStartInfo info = new ProcessStartInfo();
@@ -131,11 +137,13 @@ internal static class Installer
         Console.WriteLine();
         Console.WriteLine("  · 原生歌词窗口由 Spotify.exe 内部承载，沿用上游歌词逻辑。");
         Console.WriteLine("  · LRCLIB → QQ → 网易云，前两个都无可用歌词时才查询网易云。");
-        Console.WriteLine("  · 打开 / 关闭歌词带快速淡入淡出，右键歌词窗口或点击齿轮进入设置。");
+        Console.WriteLine("  · 打开 / 关闭歌词带快速淡入淡出，悬停歌词使用上方工具栏调节。");
         Console.WriteLine("  · 歌词窗口和 Spotify 使用同一 PID，同步结束。关闭显示会被记住。");
         Console.WriteLine("  · 联动模块由 Spotify 本身加载，没有独立常驻启动器或自动更新程序。");
         Console.WriteLine("  · Spotify 更新后扩展失效时，重新运行本程序选择安装 / 修复。");
-        Console.WriteLine("  · 此包内置 Spicetify v2.46.4，已有版本会直接沿用。");
+        Console.WriteLine(HasResource("spicetify-windows-x64.zip")
+            ? "  · 离线版内置 Spicetify v2.46.4，已有版本会直接沿用。"
+            : "  · 轻量版复用已有 Spicetify；缺少时下载固定版本并校验 SHA256。");
         Console.WriteLine("  · 卸载停用启动联动和按钮，保留 HUD 设置和其他扩展。");
         Console.WriteLine("  · 管理员窗口与普通窗口均支持安装。");
         Console.WriteLine();
@@ -171,14 +179,23 @@ internal static class Installer
         {
             Console.OutputEncoding = new UTF8Encoding(false);
             Console.InputEncoding = Encoding.UTF8;
-            if (!Console.IsOutputRedirected) Console.Title = "Spotify // Lyrics HUD Companion Setup 1.3.4";
+            if (!Console.IsOutputRedirected) Console.Title = "Spotify // Lyrics HUD Companion Setup 1.3.5";
             LoadManifest();
             NoPause = args.Length > 0;
             if (args.Length > 0)
             {
                 if (args[0] == "--self-test")
                 {
-                    foreach (string name in Hashes.Keys) { CopyVerified(name, null); Console.WriteLine("PASS SHA256 " + name); }
+                    foreach (string name in Hashes.Keys)
+                    {
+                        if (!HasResource(name))
+                        {
+                            if (name != "spicetify-windows-x64.zip") throw new InvalidDataException("Missing payload: " + name);
+                            Console.WriteLine("PASS optional pinned dependency " + name);
+                            continue;
+                        }
+                        CopyVerified(name, null); Console.WriteLine("PASS SHA256 " + name);
+                    }
                     int result = RunAction("Verify");
                     Console.WriteLine(result == 0 ? "PASS single-file extraction / PowerShell verification / cleanup" : "FAIL payload verification");
                     return result;
@@ -187,7 +204,7 @@ internal static class Installer
                 if (args[0] == "--install") return RunAction("Install");
                 if (args[0] == "--uninstall") return RunAction("Uninstall");
                 if (args[0] == "--help") { Header(); Instructions(); return 0; }
-                Console.WriteLine("Usage: Spotify-Lyrics-HUD-Setup-v1.3.4.exe [--self-test | --diagnose | --help | --install | --uninstall]");
+                Console.WriteLine("Usage: Spotify-Lyrics-HUD-Setup-v1.3.5.exe [--self-test | --diagnose | --help | --install | --uninstall]");
                 return 2;
             }
             for (;;)

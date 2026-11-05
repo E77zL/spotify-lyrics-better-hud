@@ -15,18 +15,18 @@ if %errorlevel% neq 0 exit /b 1
 cd /d "$OutputDir"
 rc /nologo /fo bridge.res "$root\native\bridge.rc"
 if %errorlevel% neq 0 exit /b 1
-cl /nologo /LD /MT /O2 /W4 /WX /wd4191 /wd4100 /EHsc /utf-8 /std:c++17 /DUNICODE /D_UNICODE $mode "$root\native\SpotifyLyricsBridge.cpp" "$root\native\NativeHud.cpp" "$root\native\NativeNetwork.cpp" "$root\native\NativeFlyout.cpp" bridge.res bcrypt.lib crypt32.lib winhttp.lib ws2_32.lib gdiplus.lib user32.lib gdi32.lib dwmapi.lib d2d1.lib dwrite.lib windowscodecs.lib ole32.lib /link /DEF:"$root\native\version.def" /OUT:"version.dll" /INCREMENTAL:NO
+cl /nologo /LD /MT /O1 /GL /Gy /Gw /W4 /WX /wd4191 /wd4100 /EHsc /utf-8 /std:c++20 /DUNICODE /D_UNICODE $mode "$root\native\SpotifyLyricsBridge.cpp" "$root\native\NativeHud.cpp" "$root\native\NativeNetwork.cpp" "$root\native\NativeFlyout.cpp" "$root\native\NativeGlass.cpp" bridge.res bcrypt.lib crypt32.lib winhttp.lib ws2_32.lib gdiplus.lib user32.lib gdi32.lib dwmapi.lib d2d1.lib dwrite.lib windowscodecs.lib ole32.lib windowsapp.lib CoreMessaging.lib /link /LTCG /OPT:REF /OPT:ICF /DEF:"$root\native\version.def" /OUT:"version.dll" /INCREMENTAL:NO
 if %errorlevel% neq 0 exit /b 1
 "@
 if($TestMode){$batch+=@"
 
-cl /nologo /MT /O2 /W4 /WX /wd4191 /EHsc /utf-8 /std:c++17 /DUNICODE /D_UNICODE "$root\tests\native-fixture.cpp" version.lib user32.lib gdi32.lib psapi.lib /link /OUT:"SpotifyBridgeTest.exe" /INCREMENTAL:NO
+cl /nologo /MT /O2 /W4 /WX /wd4191 /EHsc /utf-8 /std:c++20 /DUNICODE /D_UNICODE "$root\tests\native-fixture.cpp" version.lib user32.lib gdi32.lib psapi.lib /link /OUT:"SpotifyBridgeTest.exe" /INCREMENTAL:NO
 if %errorlevel% neq 0 exit /b 1
-cl /nologo /MT /O2 /W4 /WX /EHsc /utf-8 /std:c++17 /DUNICODE /D_UNICODE "$root\tests\fullscreen-native.cpp" user32.lib /link /OUT:"FullscreenTest.exe" /INCREMENTAL:NO
+cl /nologo /MT /O2 /W4 /WX /EHsc /utf-8 /std:c++20 /DUNICODE /D_UNICODE "$root\tests\fullscreen-native.cpp" user32.lib /link /OUT:"FullscreenTest.exe" /INCREMENTAL:NO
 if %errorlevel% neq 0 exit /b 1
 FullscreenTest.exe
 if %errorlevel% neq 0 exit /b 1
-cl /nologo /MT /O2 /W4 /WX /EHsc /utf-8 /std:c++17 /DUNICODE /D_UNICODE "$root\tests\native-appearance.cpp" "$root\native\NativeFlyout.cpp" gdiplus.lib d2d1.lib dwrite.lib windowscodecs.lib ole32.lib user32.lib gdi32.lib dwmapi.lib /link /OUT:"AppearanceTest.exe" /INCREMENTAL:NO
+cl /nologo /MT /O2 /W4 /WX /EHsc /utf-8 /std:c++20 /DUNICODE /D_UNICODE "$root\tests\native-appearance.cpp" "$root\native\NativeFlyout.cpp" "$root\native\NativeGlass.cpp" gdiplus.lib d2d1.lib dwrite.lib windowscodecs.lib ole32.lib windowsapp.lib CoreMessaging.lib user32.lib gdi32.lib dwmapi.lib /link /OUT:"AppearanceTest.exe" /INCREMENTAL:NO
 if %errorlevel% neq 0 exit /b 1
 AppearanceTest.exe
 if %errorlevel% neq 0 exit /b 1
