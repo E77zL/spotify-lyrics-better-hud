@@ -1,11 +1,10 @@
 # Spotify Lyrics Better HUD
 
 基于 **[Fanbeixi / spotify-lyrics-HUD_CN](https://github.com/Fanbeixi/spotify-lyrics-HUD_CN)** 的衍生项目  
-在原作者基础上添加Spotify启动联动、图标摁钮开关、网易云兜底和逐曲校时  
-完整署名见 [CREDITS.md](CREDITS.md)  
-本仓库的数字版本是衍生版本号，不是原项目的版本号  
+在原作者基础上添加Spotify启动联动、图标摁钮开关、更好的UI和逐曲校时  
+完整署名见 [学分](CREDITS.md)  
 
-[下载 1.2.2](https://github.com/E77zL/spotify-lyrics-better-hud/releases) · [原作者项目](https://github.com/Fanbeixi/spotify-lyrics-HUD_CN)
+[下载最新构建版](https://github.com/E77zL/spotify-lyrics-better-hud/lastedreleases) · [原作者项目](https://github.com/Fanbeixi/spotify-lyrics-HUD_CN)
 
 ## 效果展示
 
@@ -52,3 +51,4 @@ Spicetify CLI 2.46.4 为 LGPL-2.1，安装器附带对应源码与完整许可
 Electron/Chromium   
 许可保留在运行时中其它依赖及修改范围见 [CREDITS.md](CREDITS.md) 和 [NOTICE.txt](NOTICE.txt)  
 GitHub 上传与署名步骤见 [RELEASING.md](RELEASING.md)
+OpenAI大模型代替人手
