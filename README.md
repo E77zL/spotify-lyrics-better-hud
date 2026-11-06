@@ -11,6 +11,7 @@
 <img width="1500" height="1000" alt="image" src="https://github.com/user-attachments/assets/8fcde938-c67e-45d6-b507-bc0b4bc1a535" />
 <img width="800" height="450" alt="d3500313488a394f041060a4eaf6962d-ezgif com-video-to-gif-converter" src="https://github.com/user-attachments/assets/4d2e6a5c-8a38-406d-b34a-5585d1e6998e" />
 <img width="2560" height="1440" alt="image" src="https://github.com/user-attachments/assets/50b27097-ee33-426e-95b5-2a8e89d79ef8" />
+<img width="954" height="388" alt="image" src="https://github.com/user-attachments/assets/3ee0f1ce-0967-4773-b564-ad81ef69db77" /> <img width="919" height="342" alt="image" src="https://github.com/user-attachments/assets/4a1d8029-215c-49d4-a7de-7246d9ccd8e9" />
 
 
 (程序会在有软件全屏窗口化的情况下禁用鼠标悬浮在歌词窗口以防误触，不包括桌面)
@@ -18,22 +19,20 @@
 ## 安装和使用
 
 支持Windows 10以上系统，Spotify官网桌面版  
-下载Release中最新的exe程序，双击运行安装器并选择 `1` 安装/修复，安装后直接启动Spotify （管理员权限与普通权限均支持 管理员调用 Spicetify 时使用其 `--bypass-admin` 参数)  
+下载Release中最新的exe程序，双击运行安装器并选择 `1` 安装/修复
 UI右下角麦克风左侧的图标为开关浮窗摁钮  
-Spotify 内的 Marketplace 或头像菜单 `Customization` 可以浏览主题、扩展和 CSS 小组件，自定义页面按各自说明安装；第三方项目由你自行选择启用  
-窗口可拖动，鼠标抓住角落缩放，在全屏游戏时会让鼠标穿透浮窗以免跳出游戏进程  
-全屏歌词获得焦点时：左右箭头快退/快进 5 秒，上下箭头调整 Spotify 音量 5%，空格暂停/播放；按住顶部空白区域拖动即可还原并移动窗口  
+Spotify左上角的购物车可以浏览Spicetify主题、扩展和 CSS 小组件
+窗口可拖动大小，鼠标抓住窗口右下角落缩放  
+在全屏游戏时会让鼠标穿透浮窗以免跳出游戏进程  
 
 ## 功能
 
 没有独立Launcher、开机监视程序或自动更新器  
-本软件在Spotify安装目录添加 `version.dll` 和 `LyricsHUD/bridge.ini`，不修改 Spotify.exe  
+本软件仅在Spotify安装目录添加`version.dll`和`LyricsHUD/bridge.ini`
 模块将版本查询转发到Windows系统DLL，只在Spotify主进程启动歌词  
 已有其它插件的同名 DLL 时会拒绝覆盖  
 升级会移除旧软件和它的开机启动项 (老版本实现歌词的方法是自启动独立进程)  
 卸载只删除本项目模块，保留逐曲校时  
-
-安装器选项 `2` 停用启动联动与按钮，并保留个人设置和其它扩展；选项 `5` 导出源码及许可证。Spotify 更新后按钮失效时，重新运行安装/修复  
 
 ## 更新日志
 
