@@ -2,8 +2,7 @@
 #pragma once
 #include "NativeDrawing.h"
 #include <memory>
-void SetHudShape(HWND window, int width, int height, int radius);
-void ApplyHudCorners(HWND window, int width, int height, int radius);
+void ApplyHudFrame(HWND window);
 class NativeGlass
 {
     struct State;

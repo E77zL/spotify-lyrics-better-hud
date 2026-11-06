@@ -11,8 +11,8 @@ using System.Collections.Generic;
 [assembly: AssemblyDescription("Native in-process Spotify lyrics overlay")]
 [assembly: AssemblyCompany("Lyrics HUD integration contributors")]
 [assembly: AssemblyProduct("Spotify Lyrics HUD Companion")]
-[assembly: AssemblyVersion("2.0.1.0")]
-[assembly: AssemblyFileVersion("2.0.1.0")]
+[assembly: AssemblyVersion("2.0.3.0")]
+[assembly: AssemblyFileVersion("2.0.3.0")]
 
 internal static class Installer
 {
@@ -33,7 +33,7 @@ internal static class Installer
         Console.WriteLine();
         Colored("  +----------------------------------------------------+", ConsoleColor.DarkGreen);
         Colored("  |    S P O T I F Y   /   L Y R I C S   H U D         |", ConsoleColor.Green);
-        Colored("  |    NATIVE HUD SETUP v2.0.1 // SAME PROCESS           |", ConsoleColor.Green);
+        Colored("  |    NATIVE HUD SETUP v2.0.3 // SAME PROCESS           |", ConsoleColor.Green);
         Colored("  +----------------------------------------------------+", ConsoleColor.DarkGreen);
         Console.WriteLine();
         Console.WriteLine("  Spotify 启动联动 + A 按钮开关 · Windows x64");
@@ -180,7 +180,7 @@ internal static class Installer
         {
             Console.OutputEncoding = new UTF8Encoding(false);
             Console.InputEncoding = Encoding.UTF8;
-            if (!Console.IsOutputRedirected) Console.Title = "Spotify // Lyrics HUD Companion Setup 2.0.1";
+            if (!Console.IsOutputRedirected) Console.Title = "Spotify // Lyrics HUD Companion Setup 2.0.3";
             LoadManifest();
             NoPause = args.Length > 0;
             if (args.Length > 0)
@@ -205,7 +205,7 @@ internal static class Installer
                 if (args[0] == "--install") return RunAction("Install");
                 if (args[0] == "--uninstall") return RunAction("Uninstall");
                 if (args[0] == "--help") { Header(); Instructions(); return 0; }
-                Console.WriteLine("Usage: Spotify-Lyrics-HUD-Setup-v2.0.1.exe [--self-test | --diagnose | --help | --install | --uninstall]");
+                Console.WriteLine("Usage: Spotify-Lyrics-HUD-Setup-v2.0.3.exe [--self-test | --diagnose | --help | --install | --uninstall]");
                 return 2;
             }
             for (;;)

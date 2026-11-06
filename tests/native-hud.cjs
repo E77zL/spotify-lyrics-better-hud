@@ -21,7 +21,7 @@ const health=async()=>{let r=await fetch('http://127.0.0.1:'+port+'/health',{hea
   assert(h,'Native server started');assert.equal(h.pid,child.pid);assert.equal(h.windowPid,child.pid);assert.equal(h.integration,'spotify-native');
   assert.equal(h.version,require('../package.json').version);
   assert.equal(h.glassUpdateCount,1,'Initialize backdrop once without window-region reentrancy');
-  assert.equal(h.regionUpdateCount,1);
+  assert.equal(await click('frame'),'custom','The alpha edge must not receive a second DWM rounding');
   assert.equal(h.renderSurfaceBytes,0,'Disabled startup should not allocate raster surfaces');
   assert.equal(h.glassHwnd,0,'Disabled startup should not allocate a composition backdrop');
   assert.equal(JSON.parse(fs.readFileSync(path.join(qa,'host.json'))).forwarding,true);
@@ -91,20 +91,39 @@ const health=async()=>{let r=await fetch('http://127.0.0.1:'+port+'/health',{hea
    {type:'playerAction',action:'volume',delta:0.05},{type:'playerAction',action:'volume',delta:-0.05},
    {type:'playerAction',action:'toggle'}],'Fullscreen keys and Space repeat suppression');
   send({type:'lyrics',key,source:'test',lines:Array.from({length:70},(_,i)=>({time:i,text:'Seek line '+i}))});
-  send({type:'playback',snapshot:{...snapshot,positionSec:10,isPlaying:false,seek:true}});await delay(300);
+  send({type:'playback',snapshot:{...snapshot,positionSec:10,isPlaying:false}});await delay(300);
   const beforeSeekLayout=(await health()).lyricLayoutCount;
-  for(const position of [15,10,15]){
+  async function animatedSeek(position){
+   const start=(await health()).scrollIndex;
    send({type:'playback',snapshot:{...snapshot,positionSec:position,isPlaying:false,seek:true}});
-   await delay(300);h=await health();assert.equal(h.activeIndex,position);
-   assert.equal(h.scrollIndex,position,'Seek must snap to the target instead of waiting for the scroll animation');
-   assert.equal(h.activeEmphasis,1,'The target lyric is immediately highlighted');
+   let moving;
+   for(let i=0;i<25;i++){
+    h=await health();
+    if(h.activeIndex===position){moving=h;break;}
+    await delay(20);
+   }
+   assert(moving,'Seek updates the active lyric without waiting for the animation');
+   assert(moving.scrollIndex>Math.min(start,position)&&moving.scrollIndex<Math.max(start,position),
+    'Seek has intermediate animation frames in both directions, including jumps over six rows: '+JSON.stringify(moving));
+   return moving;
+  }
+  for(const position of [15,10,25]){
+   await animatedSeek(position);
+   await delay(700);h=await health();assert.equal(h.activeIndex,position);
+   assert.equal(h.scrollIndex,position,'Seek animation settles at the requested row');
+   assert(h.activeEmphasis>0.999,'Target highlighting settles with the normal playback easing');
    assert.equal(h.lyricLayoutCount,beforeSeekLayout,'Seeking reuses lyric layouts');
   }
+  await animatedSeek(5);
+  await animatedSeek(30);
+  await delay(700);h=await health();assert.equal(h.scrollIndex,30,'Reversing during an animation retargets the current position');
+  const seekSettled=h.frameCount;await delay(500);
+  assert((await health()).frameCount-seekSettled<=2,'Paused seek animation stops rendering once settled');
   send({type:'playback',snapshot:{...snapshot,positionSec:20,isPlaying:false}});await delay(300);
   h=await health();assert.equal(h.scrollIndex,20,'External timeline jumps also bypass the old transition');
   send({type:'lyrics',key,source:'test',lines:[{time:0,text:'First'},{time:11,text:'Second'}]});
   send({type:'playback',snapshot:{...snapshot,positionSec:42,isPlaying:false}});await delay(300);
-  console.log('PASS paused fullscreen forward/back seek: target row, instant highlight, no trailing scroll and cached layout');
+  console.log('PASS paused fullscreen seek: immediate target, animated forward/back/large jumps, mid-animation reversal, cached layouts and idle rendering');
   await click('topBegin');await click('end');await delay(200);assert((await health()).fullscreen,'Clicking top edge must not restore');
   await click('typography');await delay(300);h=await health();assert(h.flyoutHwnd);
   assert(h.flyout.y>=h.bounds.y+32&&h.flyout.y+h.flyout.height<=h.bounds.y+h.bounds.height);

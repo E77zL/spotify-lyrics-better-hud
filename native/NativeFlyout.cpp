@@ -87,6 +87,7 @@ void NativeFlyout::show(HMODULE instance, HWND parent, RECT lyrics, int anchorX,
                              this);
     if (!window)
         return;
+    ApplyHudFrame(window);
     dpi = GetDpiForWindow(window) / 96.0f;
     glass.attach(window);
     reposition(lyrics, anchorX);
@@ -116,7 +117,6 @@ void NativeFlyout::reposition(RECT lyrics, int anchorX)
         y, static_cast<int>(info.rcWork.top),
         std::max(static_cast<int>(info.rcWork.top), static_cast<int>(info.rcWork.bottom) - rasterHeight));
     SetWindowPos(window, HWND_TOPMOST, x, y, rasterWidth, rasterHeight, SWP_NOACTIVATE);
-    ApplyHudCorners(window, rasterWidth, rasterHeight, px(14));
     glass.sync(px(14), current.opacity);
 }
 bool NativeFlyout::commit(bool report)
@@ -287,12 +287,13 @@ void NativeFlyout::paint()
     Bitmap surface(rasterWidth, rasterHeight, rasterWidth * 4, PixelFormat32bppPARGB,
                    static_cast<BYTE *>(pixels));
     Graphics g(&surface);
-    g.Clear(Color(0, 0, 0, 0));
+    // Match the HUD: fill once, then apply the cached smooth edge.
+    g.Clear(InteractiveTint(GlassTint(current.background, current.opacity)));
     g.SetSmoothingMode(SmoothingModeAntiAlias);
-    g.ScaleTransform(dpi, dpi);
-    HudDrawing::Rounded(g, RectF(0.5f, 0.5f, FlyoutWidth - 1.0f, rasterHeight / dpi - 1), 14,
-                        InteractiveTint(GlassTint(current.background, current.opacity)),
+    HudDrawing::Rounded(g, RectF(0.5f, 0.5f, rasterWidth - 1.0f, rasterHeight - 1.0f), px(14) - 0.5f,
+                        Color(0, 0, 0, 0),
                         Color(static_cast<BYTE>(std::min(44, current.opacity)), 255, 255, 255));
+    g.ScaleTransform(dpi, dpi);
     struct Label
     {
         std::wstring value;
@@ -380,6 +381,7 @@ void NativeFlyout::paint()
         }
     }
     g.Flush(FlushIntentionSync);
+    corners.apply(pixels, rasterWidth, rasterHeight, px(14));
     RECT bounds{};
     GetWindowRect(window, &bounds);
     POINT at{bounds.left, bounds.top}, origin{};

@@ -36,6 +36,7 @@ class NativeFlyout
     HudAppearance dragStart;
     NativeText text;
     NativeGlass glass;
+    HudDrawing::RoundedEdges corners;
     std::vector<std::wstring> textValues;
     std::wstring edit, notice;
     int active = -1, rasterWidth = 0, rasterHeight = 0;

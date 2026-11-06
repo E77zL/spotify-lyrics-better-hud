@@ -21,6 +21,7 @@ struct Hud
     NativeFlyout form;
     NativeGlass glass;
     NativeFrameClock frames;
+    HudDrawing::RoundedEdges corners;
     double lastPaintMs = 0, lastRenderTime = 0, nextRenderTime = 0, dragInterval = 1.0 / 120;
     bool appearanceUnsaved = false;
     NativeText renderer, uiText;
@@ -38,12 +39,12 @@ struct Hud
     std::vector<LyricLine> lines;
     bool enabled = true, locked = false, hover = false, playing = false, dirty = true;
     bool fullscreen = false, sizingMoving = false;
-    bool snapLyrics = false;
+    bool snapLyrics = false, animateSeek = false;
     bool pointerResizing = false, restoreDragPending = false;
     POINT restoreDragStart{};
     POINT dragStartPointer{}, dragPointer{};
     RECT dragStartBounds{};
-    uint64_t glassUpdateCount = 0, regionUpdateCount = 0;
+    uint64_t glassUpdateCount = 0;
     RECT normalBounds{};
     int x = 100, y = 40, width = 770, height = 223, fontSize = 22, antialias = 50, delay = 0, index = -1;
     double position = 0, duration = 0, alpha = 0, scroll = 0;
@@ -93,30 +94,15 @@ struct Hud
         if (glassWidth == width && glassHeight == height && glassOpacity == opacity)
             return;
         const bool initial = !glassWidth;
-        const bool resized = glassWidth != width || glassHeight != height;
         const bool blurChanged = glassOpacity != opacity;
-        // SetWindowRgn can synchronously reenter WM_WINDOWPOSCHANGED.
+        // Frame configuration can synchronously reenter WM_WINDOWPOSCHANGED.
         glassWidth = width;
         glassHeight = height;
         glassOpacity = opacity;
         if (initial)
-        {
-            ApplyHudCorners(window, width, height, 16);
+            ApplyHudFrame(window);
+        if (initial || blurChanged)
             ++glassUpdateCount;
-            ++regionUpdateCount;
-        }
-        else
-        {
-            if (resized)
-            {
-                SetHudShape(window, width, height, 16);
-                ++regionUpdateCount;
-            }
-            if (blurChanged)
-            {
-                ++glassUpdateCount;
-            }
-        }
         glass.sync(16, opacity, alpha);
     }
     void beginSizeMove(bool resizing, POINT pointer)
@@ -295,7 +281,6 @@ struct Hud
                   {"keyboardFocus", GetFocus() == window},
                   {"sizingMoving", sizingMoving},
                   {"glassUpdateCount", glassUpdateCount},
-                  {"regionUpdateCount", regionUpdateCount},
                   {"uiTextPaintCount", uiTextPaintCount},
                   {"uiSurfaceHeight", uiHeight},
                   {"title", snapshot.value("title", std::string())},
@@ -406,6 +391,7 @@ struct Hud
                 renderer.clearLayouts();
                 index = -1;
                 scroll = 0;
+                snapLyrics = animateSeek = false;
                 status = "No track playing";
                 return;
             }
@@ -417,10 +403,23 @@ struct Hud
                 return;
             auto key = Json::array({title, artist, static_cast<int>(std::round(d))}).dump();
             const bool nextPlaying = s.value("isPlaying", false);
-            if (key == trackKey && (s.value("seek", false) || std::abs(p - progress()) > 0.5))
-                snapLyrics = true;
+            const bool seek = s.value("seek", false);
+            if (key == trackKey)
+            {
+                if (seek)
+                {
+                    // Update the clock immediately, then ease toward the latest requested row.
+                    animateSeek = true;
+                    snapLyrics = false;
+                }
+                else if (std::abs(p - progress()) > 0.5)
+                {
+                    snapLyrics = true;
+                    animateSeek = false;
+                }
+            }
             dirty = dirty || key != trackKey || playing != nextPlaying || duration != d ||
-                    (!nextPlaying && position != p) || snapLyrics;
+                    (!nextPlaying && position != p) || snapLyrics || seek;
             if (key != trackKey)
             {
                 trackLabel = Wide(title + "  ·  " + artist);
@@ -436,6 +435,7 @@ struct Hud
                 renderer.clearLayouts();
                 index = -1;
                 scroll = 0;
+                snapLyrics = animateSeek = false;
                 delay = 0;
                 source.clear();
                 status = "Searching lyrics...";
@@ -539,22 +539,14 @@ struct Hud
             Bitmap surface(width, height, width * 4, PixelFormat32bppPARGB,
                            static_cast<BYTE *>(rasterPixels));
             Graphics g(&surface);
-            g.Clear(Color(0, 0, 0, 0));
+            // Fill once, then mask the final premultiplied surface at its edge.
+            g.Clear(HudStyle::InteractiveTint(backgroundColor));
             g.SetSmoothingMode(SmoothingModeAntiAlias);
             g.SetTextRenderingHint(TextRenderingHintAntiAliasGridFit);
             float w = static_cast<float>(width), h = static_cast<float>(height);
-            GraphicsPath panel;
-            float r = 16;
-            panel.AddArc(0.0f, 0.0f, r * 2, r * 2, 180, 90);
-            panel.AddArc(w - r * 2 - 1, 0.0f, r * 2, r * 2, 270, 90);
-            panel.AddArc(w - r * 2 - 1, h - r * 2 - 1, r * 2, r * 2, 0, 90);
-            panel.AddArc(0.0f, h - r * 2 - 1, r * 2, r * 2, 90, 90);
-            panel.CloseFigure();
-            SolidBrush bg(HudStyle::InteractiveTint(backgroundColor));
-            g.FillPath(&bg, &panel);
-            Pen border(Color(static_cast<BYTE>(std::round(40 * HudStyle::GlassOpacity(opacityControl))), 255,
-                             255, 255));
-            g.DrawPath(&border, &panel);
+            HudDrawing::Rounded(g, RectF(0.5f, 0.5f, w - 1, h - 1), 15.5f, Color(0, 0, 0, 0),
+                                Color(static_cast<BYTE>(std::round(40 * HudStyle::GlassOpacity(opacityControl))),
+                                      255, 255, 255));
             const float top = 32, bottom = h, center = (top + bottom) / 2;
             auto p = progress() - delay / 1000.0;
             int next = -1;
@@ -571,10 +563,15 @@ struct Hud
             double dest = std::max(0, index);
             const bool snap = snapLyrics;
             snapLyrics = false;
-            if (snap || std::abs(scroll - dest) > 6)
+            if (snap || (!animateSeek && std::abs(scroll - dest) > 6))
                 scroll = dest;
             else
                 scroll += (dest - scroll) * (1 - std::exp(-dt * 15));
+            if (std::abs(scroll - dest) <= 0.01)
+            {
+                scroll = dest;
+                animateSeek = false;
+            }
             if (playing)
                 pulse += dt;
             if (!lines.empty() &&
@@ -717,6 +714,7 @@ struct Hud
                 }
             }
         }
+        corners.apply(rasterPixels, width, height, 16);
         POINT at{x, y}, origin{};
         SIZE size{width, height};
         BLENDFUNCTION blend{AC_SRC_OVER, 0, static_cast<BYTE>(std::round(alpha * 255)), AC_SRC_ALPHA};
@@ -757,7 +755,7 @@ struct Hud
         }
         auto animating = [&] {
             if (std::abs(alpha - (enabled ? 1.0 : 0.0)) > 0.001 ||
-                std::abs(scroll - std::max(0, index)) > 0.001)
+                std::abs(scroll - std::max(0, index)) > 0.01)
                 return true;
             for (int i = firstVisible; i < lastVisible; ++i)
                 if (std::abs(emphasis[i] - (i == index ? 1.0 : 0.0)) > 0.001)

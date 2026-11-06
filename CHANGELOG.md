@@ -1,3 +1,12 @@
+## 2.0.3
+
+- Preserve the 2.0.0 HUD and settings-flyout radii (16/14 px). Fill the background once and apply a cached, symmetric alpha edge; remove the competing Windows clip and border from foregrounds and glass backdrops. Repair corner tint gaps and hard seams without changing opacity or blur strength, adding rendering layers or scanning the full surface.
+
+## 2.0.2
+
+- Animate fullscreen arrow seeks from the current lyric position with the same easing as normal playback; keep the requested lyric clock immediate and retarget smoothly during rapid or reversed seeks.
+- Disable the extra Windows DWM border and system rounding on the layered HUD, every settings flyout and their glass backdrops. Keep the custom rounded background and antialias coverage, removing the mismatched dark/gray arcs at all four corners, including at 100% opacity.
+
 ## 2.0.1
 
 - Update lyrics immediately when fullscreen seek shortcuts are pressed. Bridge the requested position until Spotify's playback cache catches up, so periodic snapshots cannot briefly restore the old time.

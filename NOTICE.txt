@@ -1,4 +1,4 @@
-Spotify Lyrics HUD Companion 2.0.1
+Spotify Lyrics HUD Companion 2.0.3
 
 Derived from Fanbeixi/spotify-lyrics-HUD_CN, HUD release 5.1.0 (MIT).
 https://github.com/Fanbeixi/spotify-lyrics-HUD_CN

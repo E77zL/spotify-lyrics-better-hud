@@ -20,7 +20,7 @@ if %errorlevel% neq 0 exit /b 1
 "@
 if($TestMode){$batch+=@"
 
-cl /nologo /MT /O2 /W4 /WX /wd4191 /EHsc /utf-8 /std:c++20 /DUNICODE /D_UNICODE "$root\tests\native-fixture.cpp" version.lib user32.lib gdi32.lib psapi.lib /link /OUT:"SpotifyBridgeTest.exe" /INCREMENTAL:NO
+cl /nologo /MT /O2 /W4 /WX /wd4191 /EHsc /utf-8 /std:c++20 /DUNICODE /D_UNICODE "$root\tests\native-fixture.cpp" version.lib user32.lib gdi32.lib psapi.lib dwmapi.lib /link /OUT:"SpotifyBridgeTest.exe" /INCREMENTAL:NO
 if %errorlevel% neq 0 exit /b 1
 cl /nologo /MT /O2 /W4 /WX /EHsc /utf-8 /std:c++20 /DUNICODE /D_UNICODE "$root\tests\fullscreen-native.cpp" user32.lib /link /OUT:"FullscreenTest.exe" /INCREMENTAL:NO
 if %errorlevel% neq 0 exit /b 1
@@ -29,6 +29,10 @@ if %errorlevel% neq 0 exit /b 1
 cl /nologo /MT /O2 /W4 /WX /EHsc /utf-8 /std:c++20 /DUNICODE /D_UNICODE "$root\tests\native-appearance.cpp" "$root\native\NativeFlyout.cpp" "$root\native\NativeGlass.cpp" gdiplus.lib d2d1.lib dwrite.lib windowscodecs.lib ole32.lib windowsapp.lib CoreMessaging.lib user32.lib gdi32.lib dwmapi.lib /link /OUT:"AppearanceTest.exe" /INCREMENTAL:NO
 if %errorlevel% neq 0 exit /b 1
 AppearanceTest.exe
+if %errorlevel% neq 0 exit /b 1
+cl /nologo /MT /O2 /W4 /WX /wd4100 /EHsc /utf-8 /std:c++20 /DUNICODE /D_UNICODE "$root\tests\native-corners.cpp" "$root\native\NativeNetwork.cpp" "$root\native\NativeGlass.cpp" bcrypt.lib crypt32.lib winhttp.lib ws2_32.lib gdiplus.lib user32.lib gdi32.lib dwmapi.lib d2d1.lib dwrite.lib windowscodecs.lib ole32.lib windowsapp.lib CoreMessaging.lib /link /OUT:"CornersTest.exe" /INCREMENTAL:NO
+if %errorlevel% neq 0 exit /b 1
+CornersTest.exe
 if %errorlevel% neq 0 exit /b 1
 "@}
 $batch+="`r`nexit /b 0`r`n"

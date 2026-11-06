@@ -9,6 +9,7 @@
 #include <iostream>
 #include <chrono>
 #include <psapi.h>
+#include <dwmapi.h>
 
 static std::wstring Env(const wchar_t *key)
 {
@@ -84,6 +85,15 @@ int wmain()
         if (!originalBounds.right)
             originalBounds = rect;
         const auto start = std::chrono::steady_clock::now();
+        if (command == "frame")
+        {
+            DWM_WINDOW_CORNER_PREFERENCE corner{};
+            const auto cornerResult = DwmGetWindowAttribute(
+                window, DWMWA_WINDOW_CORNER_PREFERENCE, &corner, sizeof(corner));
+            std::cout << ((!SUCCEEDED(cornerResult) || corner != DWMWCP_DONOTROUND) ? "system" : "custom")
+                      << std::endl;
+            continue;
+        }
         if (command == "hitBlank")
         {
             const POINT blank{rect.left + 20, rect.top + 45};

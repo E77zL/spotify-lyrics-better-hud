@@ -1,9 +1,21 @@
 // MIT. Exercise actual alpha surfaces, smoothing, resize and settings validation.
 #include "../native/NativeText.h"
 #include "../native/NativeFlyout.h"
+#include <dwmapi.h>
 #include <cassert>
 #include <cstdio>
 using namespace Gdiplus;
+static void CheckRoundedFrame(HWND window)
+{
+    assert(window);
+    DWM_WINDOW_CORNER_PREFERENCE corner{};
+    // Older Windows versions do not support these attributes.
+    if (SUCCEEDED(DwmGetWindowAttribute(window, DWMWA_WINDOW_CORNER_PREFERENCE, &corner, sizeof(corner))))
+        assert(corner == DWMWCP_DONOTROUND);
+    COLORREF border{};
+    if (SUCCEEDED(DwmGetWindowAttribute(window, DWMWA_BORDER_COLOR, &border, sizeof(border))))
+        assert(border == DWMWA_COLOR_NONE);
+}
 static std::vector<BYTE> Render(NativeText &text, int smoothing, int width = 420, float x = 24,
                                 bool reuse = false)
 {
@@ -225,11 +237,29 @@ int wmain()
         assert(HudStyle::OpacityControl(0.05) == 40);
         assert(HudStyle::OpacityControl(0.0) == 0);
         assert(HudStyle::OpacityControl(1.0) == 100);
+        // Reproduce the opaque teal corner regression for every actual flyout window,
+        // and repeat with its translucent Composition backdrop enabled.
+        form.hide(false);
+        for (int opacity : {100, 40})
+            for (auto kind : {FlyoutKind::Timing, FlyoutKind::Typography, FlyoutKind::Opacity,
+                              FlyoutKind::Colors})
+            {
+                auto appearance = applied;
+                appearance.background = L"#448888";
+                appearance.opacity = opacity;
+                form.show(GetModuleHandleW(nullptr), nullptr, lyrics, 700, kind, appearance, onApply);
+                CheckRoundedFrame(form.window);
+                if (const auto backdrop = GetWindow(form.window, GW_OWNER))
+                    CheckRoundedFrame(backdrop);
+                form.hide(false);
+            }
         // Exercise a real host-backdrop visual without changing foreground opacity or input.
         HWND host = CreateWindowExW(WS_EX_LAYERED | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE, L"STATIC",
                                     L"Composition QA", WS_POPUP, 100, 100, 300, 140, nullptr, nullptr,
                                     GetModuleHandleW(nullptr), nullptr);
         assert(host);
+        ApplyHudFrame(host);
+        CheckRoundedFrame(host);
         SetLayeredWindowAttributes(host, 0, 255, LWA_ALPHA);
         ShowWindow(host, SW_SHOWNOACTIVATE);
         NativeGlass composition;
@@ -239,6 +269,7 @@ int wmain()
                composition.error());
         if (backdrop)
         {
+            CheckRoundedFrame(backdrop);
             assert(GetWindow(host, GW_OWNER) == backdrop);
             const auto ex = GetWindowLongPtrW(backdrop, GWL_EXSTYLE);
             assert(!IsWindowEnabled(backdrop));

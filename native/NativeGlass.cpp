@@ -60,19 +60,17 @@ LRESULT CALLBACK GlassProc(HWND window, UINT message, WPARAM w, LPARAM l)
     return DefWindowProcW(window, message, w, l);
 }
 } // namespace
-void SetHudShape(HWND window, int width, int height, int radius)
+void ApplyHudFrame(HWND window)
 {
-    HRGN shape = CreateRoundRectRgn(0, 0, width + 1, height + 1, radius * 2, radius * 2);
-    if (shape && !SetWindowRgn(window, shape, FALSE))
-        DeleteObject(shape);
-}
-void ApplyHudCorners(HWND window, int width, int height, int radius)
-{
-    SetHudShape(window, width, height, radius);
+    // The foreground alpha and Composition geometry own the same rounded edge.
+    // An integer region or a DWM border would cut it again and expose seams.
+    SetWindowRgn(window, nullptr, FALSE);
     BOOL dark = TRUE;
     DwmSetWindowAttribute(window, 20, &dark, sizeof(dark));
-    const DWM_WINDOW_CORNER_PREFERENCE corner = DWMWCP_ROUND;
+    const DWM_WINDOW_CORNER_PREFERENCE corner = DWMWCP_DONOTROUND;
     DwmSetWindowAttribute(window, DWMWA_WINDOW_CORNER_PREFERENCE, &corner, sizeof(corner));
+    const COLORREF border = DWMWA_COLOR_NONE;
+    DwmSetWindowAttribute(window, DWMWA_BORDER_COLOR, &border, sizeof(border));
 }
 struct NativeGlass::State
 {
@@ -151,6 +149,7 @@ void NativeGlass::attach(HWND foreground)
             failure = HRESULT_FROM_WIN32(GetLastError());
             return;
         }
+        ApplyHudFrame(next->backdrop);
         // WS_EX_TRANSPARENT skips input across processes only on layered windows.
         // Keep window alpha fixed; the Composition visual controls the actual blur blend.
         check_bool(SetLayeredWindowAttributes(next->backdrop, 0, 255, LWA_ALPHA));

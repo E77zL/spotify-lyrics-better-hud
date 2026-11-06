@@ -6,8 +6,58 @@
 #include <windows.h>
 #include <objidl.h>
 #include <gdiplus.h>
+#include <algorithm>
+#include <vector>
 namespace HudDrawing
 {
+// Cache just the partial corner pixels. Mask the premultiplied surface once;
+// Windows and the blur compositor must not add a second, different outline.
+class RoundedEdges
+{
+    struct Pixel
+    {
+        int x, y, alpha;
+    };
+    int cachedRadius = -1;
+    std::vector<Pixel> edge;
+
+  public:
+    void apply(void *pixels, int width, int height, int radius)
+    {
+        radius = std::clamp(radius, 0, std::min(width, height) / 2);
+        if (cachedRadius != radius)
+        {
+            cachedRadius = radius;
+            edge.clear();
+            constexpr int samples = 8;
+            for (int y = 0; y < radius; ++y)
+                for (int x = 0; x < radius; ++x)
+                {
+                    int inside = 0;
+                    for (int sy = 0; sy < samples; ++sy)
+                        for (int sx = 0; sx < samples; ++sx)
+                        {
+                            const int dx = (radius - x) * samples * 2 - sx * 2 - 1;
+                            const int dy = (radius - y) * samples * 2 - sy * 2 - 1;
+                            const int r = radius * samples * 2;
+                            inside += dx * dx + dy * dy <= r * r;
+                        }
+                    if (inside < samples * samples)
+                        edge.push_back({x, y, (inside * 255 + samples * samples / 2) / (samples * samples)});
+                }
+        }
+        auto bytes = static_cast<BYTE *>(pixels);
+        for (const auto &p : edge)
+            for (int corner = 0; corner < 4; ++corner)
+            {
+                const int x = corner & 1 ? width - p.x - 1 : p.x;
+                const int y = corner & 2 ? height - p.y - 1 : p.y;
+                auto pixel = bytes + (y * width + x) * 4;
+                for (int channel = 0; channel < 4; ++channel)
+                    pixel[channel] = static_cast<BYTE>((pixel[channel] * p.alpha + 127) / 255);
+            }
+    }
+};
 inline constexpr wchar_t FontName[] = L"Segoe UI";
 enum class Icon
 {
@@ -29,8 +79,11 @@ inline void Rounded(Gdiplus::Graphics &g, Gdiplus::RectF box, float radius, Gdip
     p.AddArc(box.GetRight() - d, box.GetBottom() - d, d, d, 0, 90);
     p.AddArc(box.X, box.GetBottom() - d, d, d, 90, 90);
     p.CloseFigure();
-    Gdiplus::SolidBrush brush(fill);
-    g.FillPath(&brush, &p);
+    if (fill.GetA())
+    {
+        Gdiplus::SolidBrush brush(fill);
+        g.FillPath(&brush, &p);
+    }
     if (edge.GetA())
     {
         Gdiplus::Pen pen(edge);
