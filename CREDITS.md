@@ -7,7 +7,8 @@
 | 来源 | 使用范围 | 授权 |
 | --- | --- | --- |
 | [Fanbeixi/spotify-lyrics-HUD_CN](https://github.com/Fanbeixi/spotify-lyrics-HUD_CN)，HUD 5.1.0 | 歌词窗口的视觉设计、LRC 工具及 QQ 查询基础；1.3.0 窗口已改为原生实现 | MIT；原文见 `licenses/HUD-LICENSE.txt` |
-| [Spicetify CLI](https://github.com/spicetify/cli)，2.46.4 | 官方 Spotify 客户端扩展接口与 A 按钮加载 | LGPL-2.1；见 `licenses/SPICETIFY-LICENSE`，对应源码随安装器提供 |
+| [Spicetify CLI](https://github.com/spicetify/cli)，2.46.4 | Spotify 客户端修改工具、A 按钮与自定义页面加载 | LGPL-2.1；见 `licenses/SPICETIFY-LICENSE`，对应源码随安装器提供 |
+| [Spicetify Marketplace](https://github.com/spicetify/marketplace)，1.0.12 | Spotify 内的主题、扩展、CSS 小组件目录及安装管理 | MIT；版权 CharlieS1103 + theRealPadster，完整许可见 `licenses/MARKETPLACE-LICENSE.txt` |
 | [Coooookies / node-windows-smtc-monitor](https://github.com/LeagueTavern/node-windows-smtc-monitor)，1.0.12 | Windows 系统媒体信息回退 | MIT；见 `licenses/SMTC-LICENSE.txt` |
 | [websockets/ws](https://github.com/websockets/ws)，8.22.0 | 认证的本地 WebSocket 通信 | MIT；见 `licenses/WS-LICENSE.txt` |
 | [Electron](https://github.com/electron/electron)，31.7.7 / Chromium | 历史版本所用运行时，1.3.0 不分发 | 历史 Electron MIT 文本保留于 `licenses/ELECTRON-LICENSE.txt` |
@@ -24,3 +25,8 @@
 构建时下载并核验原作者发布包，不把本机安装目录或用户设置当成源文件。`app/` 中继承的代码和图标仍受上游 MIT 许可约束；修改文件不代表取得原作者的版权。发布时请保留本文件、`NOTICE.txt`、根目录 `LICENSE` 及 `licenses/` 全部原文。
 
 Native 1.3.0 overlay uses nlohmann/json v3.11.3, copyright Niels Lohmann, MIT; see licenses/JSON-LICENSE.txt. Provider modules derive from Fanbeixi HUD and retain their original MIT attribution.
+
+Marketplace 1.0.12 official release archive SHA256: `43c8ccff189636cf2a8e8b5ca77e87487d22599ff8dc53b692170f92cbbb4e16`.
+Upstream source: https://github.com/spicetify/marketplace/tree/v1.0.12 .
+Integration changes are reproducible in `scripts/Patch-Marketplace.cjs`: remove eager catalog preloading and its global sessionStorage reset, skip idle CDN probes, and retain normal installed theme/extension/snippet loading. Other Marketplace code is preserved from the pinned upstream release.
+Marketplace dependency copyright and license notices are retained in `licenses/MARKETPLACE-THIRD-PARTY.txt` and installed beside its JavaScript files.

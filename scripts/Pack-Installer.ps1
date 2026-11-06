@@ -5,7 +5,7 @@ $version=(Get-Content -LiteralPath (Join-Path $root 'package.json') -Raw | Conve
 $payload=Join-Path $root '.build/payload'
 $dist=Join-Path $root 'dist'
 $packed=Join-Path $root '.build/packed'
-$files=@('ConsoleActions.ps1','Bridge.ps1','Dependency.ps1','spotify-lyrics-hud.js','version.dll','HUD-LICENSE.txt','JSON-LICENSE.txt','HUD-INTEGRATION-SOURCE.zip','spicetify-windows-x64.zip','spicetify-release.json','SPICETIFY-LICENSE','LICENSE','README.md','spicetify-source-v2.46.4.tar.gz','NOTICE.txt')
+$files=@('ConsoleActions.ps1','Bridge.ps1','Dependency.ps1','Marketplace.ps1','marketplace.zip','marketplace-color.ini','MARKETPLACE-LICENSE.txt','spotify-lyrics-hud.js','version.dll','HUD-LICENSE.txt','JSON-LICENSE.txt','HUD-INTEGRATION-SOURCE.zip','spicetify-windows-x64.zip','spicetify-release.json','SPICETIFY-LICENSE','LICENSE','README.md','spicetify-source-v2.46.4.tar.gz','NOTICE.txt')
 $hashes=foreach($name in $files){(Get-FileHash -LiteralPath (Join-Path $payload $name)).Hash.ToLowerInvariant()+'  '+$name}
 [IO.File]::WriteAllLines((Join-Path $payload 'manifest.sha256'),$hashes,(New-Object Text.UTF8Encoding($false)))
 New-Item -ItemType Directory -Path $packed,$dist -Force | Out-Null

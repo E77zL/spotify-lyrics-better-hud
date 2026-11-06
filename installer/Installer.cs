@@ -11,8 +11,8 @@ using System.Collections.Generic;
 [assembly: AssemblyDescription("Native in-process Spotify lyrics overlay")]
 [assembly: AssemblyCompany("Lyrics HUD integration contributors")]
 [assembly: AssemblyProduct("Spotify Lyrics HUD Companion")]
-[assembly: AssemblyVersion("1.3.5.0")]
-[assembly: AssemblyFileVersion("1.3.5.0")]
+[assembly: AssemblyVersion("2.0.1.0")]
+[assembly: AssemblyFileVersion("2.0.1.0")]
 
 internal static class Installer
 {
@@ -33,7 +33,7 @@ internal static class Installer
         Console.WriteLine();
         Colored("  +----------------------------------------------------+", ConsoleColor.DarkGreen);
         Colored("  |    S P O T I F Y   /   L Y R I C S   H U D         |", ConsoleColor.Green);
-        Colored("  |    NATIVE HUD SETUP v1.3.5 // SAME PROCESS           |", ConsoleColor.Green);
+        Colored("  |    NATIVE HUD SETUP v2.0.1 // SAME PROCESS           |", ConsoleColor.Green);
         Colored("  +----------------------------------------------------+", ConsoleColor.DarkGreen);
         Console.WriteLine();
         Console.WriteLine("  Spotify 启动联动 + A 按钮开关 · Windows x64");
@@ -63,7 +63,7 @@ internal static class Installer
                 throw new InvalidDataException("Unsafe payload name");
             Hashes.Add(name, row.Substring(0, split));
         }
-        if (Hashes.Count != 15) throw new InvalidDataException("Unexpected payload count");
+        if (Hashes.Count != 19) throw new InvalidDataException("Unexpected payload count");
     }
     private static void CopyVerified(string name, Stream destination)
     {
@@ -146,6 +146,7 @@ internal static class Installer
             : "  · 轻量版复用已有 Spicetify；缺少时下载固定版本并校验 SHA256。");
         Console.WriteLine("  · 卸载停用启动联动和按钮，保留 HUD 设置和其他扩展。");
         Console.WriteLine("  · 管理员窗口与普通窗口均支持安装。");
+        Console.WriteLine("  · Spotify 内置 Marketplace 入口，可选主题、扩展和 CSS 小组件。");
         Console.WriteLine();
         Colored("  本程序不是 Spotify 官方产品。HUD 版权归上游作者所有。", ConsoleColor.DarkGray);
         Colored("  HUD / 集成代码：MIT；Spicetify：LGPL-2.1。", ConsoleColor.DarkGray);
@@ -158,7 +159,7 @@ internal static class Installer
         if (String.IsNullOrWhiteSpace(input)) return;
         string destination = Path.GetFullPath(input.Trim().Trim('"'));
         Directory.CreateDirectory(destination);
-        foreach (string name in new string[] { "spicetify-source-v2.46.4.tar.gz", "HUD-INTEGRATION-SOURCE.zip", "HUD-LICENSE.txt", "SPICETIFY-LICENSE", "LICENSE", "NOTICE.txt" })
+        foreach (string name in new string[] { "spicetify-source-v2.46.4.tar.gz", "HUD-INTEGRATION-SOURCE.zip", "HUD-LICENSE.txt", "SPICETIFY-LICENSE", "MARKETPLACE-LICENSE.txt", "LICENSE", "NOTICE.txt" })
         {
             string output = Path.Combine(destination, name);
             if (File.Exists(output)) throw new IOException("文件已存在，未覆盖：" + output);
@@ -179,7 +180,7 @@ internal static class Installer
         {
             Console.OutputEncoding = new UTF8Encoding(false);
             Console.InputEncoding = Encoding.UTF8;
-            if (!Console.IsOutputRedirected) Console.Title = "Spotify // Lyrics HUD Companion Setup 1.3.5";
+            if (!Console.IsOutputRedirected) Console.Title = "Spotify // Lyrics HUD Companion Setup 2.0.1";
             LoadManifest();
             NoPause = args.Length > 0;
             if (args.Length > 0)
@@ -204,7 +205,7 @@ internal static class Installer
                 if (args[0] == "--install") return RunAction("Install");
                 if (args[0] == "--uninstall") return RunAction("Uninstall");
                 if (args[0] == "--help") { Header(); Instructions(); return 0; }
-                Console.WriteLine("Usage: Spotify-Lyrics-HUD-Setup-v1.3.5.exe [--self-test | --diagnose | --help | --install | --uninstall]");
+                Console.WriteLine("Usage: Spotify-Lyrics-HUD-Setup-v2.0.1.exe [--self-test | --diagnose | --help | --install | --uninstall]");
                 return 2;
             }
             for (;;)

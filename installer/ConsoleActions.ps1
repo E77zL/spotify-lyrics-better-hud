@@ -6,6 +6,7 @@ $installRoot = Join-Path $env:LOCALAPPDATA 'SpotifyLyricsCompanion'
 $runKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run'
 . (Join-Path $PSScriptRoot 'Bridge.ps1')
 . (Join-Path $PSScriptRoot 'Dependency.ps1')
+. (Join-Path $PSScriptRoot 'Marketplace.ps1')
 
 function Write-Step([string]$Number, [string]$Message) { Write-Host "  [$Number] $Message" -ForegroundColor Green }
 function Find-Spicetify {
@@ -95,7 +96,7 @@ try {
         $tokens = $null; $errors = $null
         [System.Management.Automation.Language.Parser]::ParseFile($PSCommandPath, [ref]$tokens, [ref]$errors) | Out-Null
         if ($errors.Count) { throw ($errors | Out-String) }
-        foreach ($name in @('version.dll','Bridge.ps1','spotify-lyrics-hud.js','HUD-LICENSE.txt','JSON-LICENSE.txt')) { if (!(Test-Path -LiteralPath (Join-Path $PSScriptRoot $name))) { throw "Missing payload $name" } }
+        foreach ($name in @('version.dll','Bridge.ps1','Marketplace.ps1','marketplace.zip','marketplace-color.ini','spotify-lyrics-hud.js','HUD-LICENSE.txt','JSON-LICENSE.txt','MARKETPLACE-LICENSE.txt')) { if (!(Test-Path -LiteralPath (Join-Path $PSScriptRoot $name))) { throw "Missing payload $name" } }
         $bridgeInfo = (Get-Item -LiteralPath (Join-Path $PSScriptRoot 'version.dll')).VersionInfo
         if ($bridgeInfo.InternalName -ne 'SpotifyLyricsBridge') { throw 'Invalid Spotify process bridge.' }
         $release = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'spicetify-release.json') -Raw | ConvertFrom-Json
@@ -136,7 +137,7 @@ try {
     $configPath = Get-SpicetifyConfig -InitializeIfMissing
     $stamp = Get-Date -Format 'yyyyMMdd-HHmmss-fff'
     Copy-Item -LiteralPath $configPath -Destination ($configPath + '.hud-backup-' + $stamp)
-    Write-Step '3/6' '停用旧歌词组件，安装 Lyrics HUD Companion 1.3.5'
+    Write-Step '3/6' '停用旧歌词组件，安装 Lyrics HUD Companion 2.0.1'
     Stop-Companion; Disable-OldOverlay
     $originalHud = @(Get-Process 'Spotify悬浮歌词' -ErrorAction SilentlyContinue | Where-Object { $_.SessionId -eq [Diagnostics.Process]::GetCurrentProcess().SessionId })
     foreach ($process in $originalHud) {
@@ -176,6 +177,15 @@ try {
     Invoke-Spicetify config spotify_path $spotify
     Invoke-Spicetify config extensions 'netease-lyrics.js-'
     Invoke-Spicetify config extensions 'spotify-lyrics-hud.js'
+    Write-Host '  安装 Spotify 内部 Marketplace：主题、扩展和 CSS 小组件。' -ForegroundColor DarkGray
+    $userData=Split-Path -Parent $configPath
+    Install-HudMarketplace $userData (Join-Path $PSScriptRoot 'marketplace.zip')
+    $themeRoot=Join-Path $userData 'Themes/marketplace'
+    New-Item -ItemType Directory -Force -Path $themeRoot | Out-Null
+    if(!(Test-Path -LiteralPath (Join-Path $themeRoot 'color.ini'))){Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'marketplace-color.ini') -Destination (Join-Path $themeRoot 'color.ini')}
+    $theme=@(Invoke-Spicetify config current_theme | ForEach-Object {([regex]::Replace([string]$_,'\x1B\[[0-?]*[ -/]*[@-~]','')).Trim()} | Where-Object {$_})
+    if(!$theme.Count){Invoke-Spicetify config current_theme marketplace}
+    Invoke-Spicetify config custom_apps marketplace
     Write-Step '5/6' '应用 Spotify 按钮'
     Invoke-BackupApply
     Write-Step '6/6' '安装 Spotify 进程内歌词联动模块'
@@ -184,5 +194,6 @@ try {
     $legacy = Join-Path $installRoot 'SpotifyLyricsLauncher.exe'
     if (Test-Path -LiteralPath $legacy) { Remove-Item -LiteralPath $legacy -Force }
     Write-Host '  安装完成。打开 Spotify，点击麦克风左侧 A 按钮显示 / 隐藏 HUD。' -ForegroundColor Green
-    Write-Host '  歌词窗口与 Spotify 使用同一进程，没有独立歌词进程。悬停歌词，通过校时数字、Aa、透明度和颜色入口调节；拖动边缘缩放。'; exit 0
+    Write-Host '  Spotify 内打开 Marketplace 或头像菜单中的 Customization，选择主题、扩展和小组件。';
+    Write-Host '  歌词窗口与 Spotify 使用同一进程。悬停歌词，通过校时数字、Aa、透明度和颜色入口调节；拖动边缘缩放。'; exit 0
 } catch { Write-Host ('  [ERROR] ' + $_.Exception.Message) -ForegroundColor Red; exit 1 }

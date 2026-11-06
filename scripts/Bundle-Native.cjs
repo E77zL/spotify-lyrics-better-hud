@@ -51,6 +51,6 @@ let out=template.replace("  const token =",runtime+"\n  const token =")
  .replace('      lastSample = snapshot;','      lastSample = snapshot;\n      lookupLyrics(snapshot);')
  .replace("          if (state.type === 'state')", "          if (state.type === 'reply') { const entry=pending.get(state.id); if(entry)entry.finish(state.error?Error(state.error):null,state.result); }\n          else if (state.type === 'state')")
  .replace('socket = null; button.active = false;','resetLookup(); socket = null; button.active = false;')
- .replace('    stopped = true; clearTimeout(bootTimer);','    resetLookup(); stopped = true; clearTimeout(bootTimer);');
+ .replace('    stopped = true;','    resetLookup(); stopped = true;');
 const target=process.argv[2]||path.join(root,'.build/payload/spotify-lyrics-hud.js');
 fs.mkdirSync(path.dirname(target),{recursive:true});fs.writeFileSync(target,out);console.log('Bundled native renderer providers: '+target);

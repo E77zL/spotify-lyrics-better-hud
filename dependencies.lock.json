@@ -1,5 +1,10 @@
 [
   {
+    "name": "marketplace-v1.0.12.zip",
+    "url": "https://github.com/spicetify/marketplace/releases/download/v1.0.12/marketplace.zip",
+    "sha256": "43c8ccff189636cf2a8e8b5ca77e87487d22599ff8dc53b692170f92cbbb4e16"
+  },
+  {
     "name": "spicetify-windows-x64.zip",
     "url": "https://github.com/spicetify/cli/releases/download/v2.46.4/spicetify-2.46.4-windows-x64.zip",
     "sha256": "0490380bf59e00c94cf6cb12bfac5152791b91bb8009aceef53c49815b45a56f"

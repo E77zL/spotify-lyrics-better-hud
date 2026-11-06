@@ -66,6 +66,7 @@ int wmain()
     std::string command;
     POINT pointer{};
     RECT layoutBounds{};
+    RECT originalBounds{};
     while (std::getline(std::cin, command))
     {
         HWND window = nullptr;
@@ -80,6 +81,8 @@ int wmain()
             return 25;
         RECT rect{};
         GetWindowRect(window, &rect);
+        if (!originalBounds.right)
+            originalBounds = rect;
         const auto start = std::chrono::steady_clock::now();
         if (command == "hitBlank")
         {
@@ -116,8 +119,24 @@ int wmain()
                                                     : 600,
                          SWP_NOACTIVATE | SWP_NOZORDER);
         }
+        else if (command == "layoutRestoreNormal")
+            SetWindowPos(window, nullptr, originalBounds.left, originalBounds.top,
+                         originalBounds.right - originalBounds.left, originalBounds.bottom - originalBounds.top,
+                         SWP_NOACTIVATE | SWP_NOZORDER);
         else if (command == "hover")
             SendMessageW(window, WM_MOUSEMOVE, 0, MAKELPARAM(20, 45));
+        else if (command == "topBegin")
+        {
+            pointer = {rect.left + 200, rect.top + 4};
+            SendMessageW(window, WM_LBUTTONDOWN, MK_LBUTTON, MAKELPARAM(200, 4));
+        }
+        else if (command.rfind("key", 0) == 0)
+        {
+            // The fixture's caller sends real messages to the HUD thread, without global hooks.
+            const WPARAM key = command == "keyLeft" ? VK_LEFT : command == "keyRight" ? VK_RIGHT :
+                               command == "keyUp" ? VK_UP : command == "keyDown" ? VK_DOWN : VK_SPACE;
+            SendMessageW(window, WM_KEYDOWN, key, command == "keySpaceRepeat" ? (1LL << 30) : 0);
+        }
         else if (command == "begin" || command == "resizeBegin")
         {
             const int px = command == "begin" ? 300 : rect.right - rect.left - 10;

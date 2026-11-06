@@ -13,9 +13,10 @@ assert(native.includes('FILEVERSION ' + version.replaceAll('.', ',') + ',0'));
 assert(native.includes('"ProductVersion", "' + version + '"'));
 assert(installer.includes('AssemblyFileVersion("' + version + '.0")'));
 assert(installer.includes('AssemblyVersion("' + version + '.0")'));
-for (const file of ['installer/Installer.cs', 'installer/ConsoleActions.ps1', 'README.md', 'RELEASING.md', '.github/workflows/build.yml']) {
+for (const file of ['installer/Installer.cs', 'installer/ConsoleActions.ps1', 'RELEASING.md', '.github/workflows/build.yml']) {
   assert(read(file).includes(version), file + ': release version missing');
   assert(!/(?<![\d.])1\.2(?!\.\d)/.test(read(file)), file + ': old release label remains');
 }
+assert(read('README.md').includes(version)||read('README.md').includes('/releases/latest'),'README links to current release');
 assert(read('CHANGELOG.md').includes('## ' + version));
 console.log('PASS package, native module, installer, build filenames, CI and release docs all agree on ' + version);

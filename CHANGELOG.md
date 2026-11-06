@@ -1,3 +1,18 @@
+## 2.0.1
+
+- Update lyrics immediately when fullscreen seek shortcuts are pressed. Bridge the requested position until Spotify's playback cache catches up, so periodic snapshots cannot briefly restore the old time.
+- Accumulate repeated and reversed seeks from the pending target. Reconcile confirmations, failed commands, track changes and a bounded timeout; temporary confirmation polling stops when finished.
+- Snap lyric position and highlighting on seeks, including external timeline jumps, while retaining smooth scrolling during normal playback and reusing cached layouts.
+
+## 2.0.0
+
+- Add focused fullscreen playback controls: Left/Right seek 5 seconds, Up/Down change Spotify volume by 5%, and Space toggles playback without key-repeat toggling. No global keyboard hook or system volume changes.
+- Drag the fullscreen top strip to restore the previous window size and continue moving under the pointer; simple clicks stay fullscreen. Preserve frame-paced dragging and continuous glass.
+- Integrate Spicetify Marketplace 1.0.12 inside Spotify, with a native navigation entry and a Customization profile-menu shortcut. Keep the A button dedicated to the desktop lyrics HUD.
+- Browse and choose themes, extensions and CSS snippets; browse custom apps with their manual installation instructions. Do not enable third-party items by default.
+- Disable Marketplace's startup-wide catalog preload and global sessionStorage clearing; skip CDN probing when no remote theme or extension is installed. Keep installed item loading and local snippets.
+- Pin and verify Marketplace release assets, reuse independent installations, retain existing themes, and preserve Marketplace licensing and source attribution. Both installer variants include the Marketplace payload.
+
 ## 1.3.5
 
 - Compress installer resources with the system .NET decoder. Default to a lightweight single EXE that reuses installed Spicetify or downloads its pinned, SHA256-verified archive on first installation; provide an Offline build with the complete archive. Both include all corresponding source and licenses.

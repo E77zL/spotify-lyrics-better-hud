@@ -20,7 +20,9 @@
 支持Windows 10以上系统，Spotify官网桌面版  
 下载Release中最新的exe程序，双击运行安装器并选择 `1` 安装/修复，安装后直接启动Spotify （管理员权限与普通权限均支持 管理员调用 Spicetify 时使用其 `--bypass-admin` 参数)  
 UI右下角麦克风左侧的图标为开关浮窗摁钮  
+Spotify 内的 Marketplace 或头像菜单 `Customization` 可以浏览主题、扩展和 CSS 小组件，自定义页面按各自说明安装；第三方项目由你自行选择启用  
 窗口可拖动，鼠标抓住角落缩放，在全屏游戏时会让鼠标穿透浮窗以免跳出游戏进程  
+全屏歌词获得焦点时：左右箭头快退/快进 5 秒，上下箭头调整 Spotify 音量 5%，空格暂停/播放；按住顶部空白区域拖动即可还原并移动窗口  
 
 ## 功能
 
@@ -48,6 +50,7 @@ UI右下角麦克风左侧的图标为开关浮窗摁钮
 本项目不是 Spotify 官方产品；歌词版权归相应权利人所有  
 HUD 与本仓库集成代码为 MIT；原作者许可原样保留在 `licenses/HUD-LICENSE.txt`  
 Spicetify CLI 2.46.4 为 LGPL-2.1，安装器附带对应源码与完整许可  
+Spicetify Marketplace 1.0.12 为 MIT，完整许可见 `licenses/MARKETPLACE-LICENSE.txt`；集成版取消启动时的目录预加载，来源及修改见 [学分](CREDITS.md)  
 Electron/Chromium   
 许可保留在运行时中其它依赖及修改范围见 [CREDITS.md](CREDITS.md) 和 [NOTICE.txt](NOTICE.txt)  
 GitHub 上传与署名步骤见 [RELEASING.md](RELEASING.md)

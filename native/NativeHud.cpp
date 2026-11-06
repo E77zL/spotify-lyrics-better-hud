@@ -38,7 +38,9 @@ struct Hud
     std::vector<LyricLine> lines;
     bool enabled = true, locked = false, hover = false, playing = false, dirty = true;
     bool fullscreen = false, sizingMoving = false;
-    bool pointerResizing = false;
+    bool snapLyrics = false;
+    bool pointerResizing = false, restoreDragPending = false;
+    POINT restoreDragStart{};
     POINT dragStartPointer{}, dragPointer{};
     RECT dragStartBounds{};
     uint64_t glassUpdateCount = 0, regionUpdateCount = 0;
@@ -140,7 +142,37 @@ struct Hud
         // Do not enter User32's synchronous modal drag loop. Keep blur enabled.
         // Mouse reports replace the latest target; frame deadlines commit geometry.
         SetForegroundWindow(window);
+        if (GetCapture() != window)
+            SetCapture(window);
+        frames.request();
+    }
+    void beginRestoreDrag(POINT pointer)
+    {
+        form.hide();
+        ClientToScreen(window, &pointer);
+        restoreDragStart = pointer;
+        restoreDragPending = true;
         SetCapture(window);
+    }
+    void moveRestoreDrag(LPARAM point)
+    {
+        POINT pointer{static_cast<short>(LOWORD(point)), static_cast<short>(HIWORD(point))};
+        ClientToScreen(window, &pointer);
+        if (abs(pointer.x - restoreDragStart.x) < GetSystemMetrics(SM_CXDRAG) &&
+            abs(pointer.y - restoreDragStart.y) < GetSystemMetrics(SM_CYDRAG))
+            return;
+        const double grab = std::clamp((restoreDragStart.x - x) / static_cast<double>(width), 0.0, 1.0);
+        const int grabY = std::clamp<int>(restoreDragStart.y - y, 0, 24);
+        const int restoredWidth = normalBounds.right - normalBounds.left;
+        const int restoredHeight = normalBounds.bottom - normalBounds.top;
+        restoreDragPending = false;
+        fullscreen = false;
+        SetWindowLongPtrW(window, GWL_EXSTYLE, GetWindowLongPtrW(window, GWL_EXSTYLE) | WS_EX_NOACTIVATE);
+        SetWindowPos(window, HWND_TOPMOST, pointer.x - static_cast<int>(restoredWidth * grab),
+                     pointer.y - grabY, restoredWidth, restoredHeight, SWP_NOACTIVATE);
+        ScreenToClient(window, &pointer);
+        beginSizeMove(false, pointer);
+        dirty = true;
         frames.request();
     }
     void movePointer(LPARAM point)
@@ -162,6 +194,12 @@ struct Hud
     }
     void endSizeMove()
     {
+        if (restoreDragPending)
+        {
+            restoreDragPending = false;
+            if (GetCapture() == window)
+                ReleaseCapture();
+        }
         if (!sizingMoving)
             return;
         sizingMoving = false;
@@ -183,6 +221,7 @@ struct Hud
     }
     void toggleFullscreen()
     {
+        endSizeMove();
         form.hide();
         RECT target{};
         if (!fullscreen)
@@ -204,8 +243,15 @@ struct Hud
             }
         }
         fullscreen = !fullscreen;
+        const auto style = GetWindowLongPtrW(window, GWL_EXSTYLE);
+        SetWindowLongPtrW(window, GWL_EXSTYLE, fullscreen ? style & ~WS_EX_NOACTIVATE : style | WS_EX_NOACTIVATE);
         SetWindowPos(window, HWND_TOPMOST, target.left, target.top, target.right - target.left,
                      target.bottom - target.top, SWP_NOACTIVATE);
+        if (fullscreen)
+        {
+            SetForegroundWindow(window);
+            SetFocus(window);
+        }
         dirty = true;
         frames.request();
     }
@@ -245,6 +291,8 @@ struct Hud
                   {"visible", IsWindowVisible(window) != FALSE},
                   {"fullscreenLocked", locked},
                   {"fullscreen", fullscreen},
+                  {"foreground", GetForegroundWindow() == window},
+                  {"keyboardFocus", GetFocus() == window},
                   {"sizingMoving", sizingMoving},
                   {"glassUpdateCount", glassUpdateCount},
                   {"regionUpdateCount", regionUpdateCount},
@@ -257,6 +305,8 @@ struct Hud
                   {"positionSec", progress()},
                   {"offsetMs", delay},
                   {"activeIndex", index},
+                  {"scrollIndex", scroll},
+                  {"activeEmphasis", index >= 0 && index < static_cast<int>(emphasis.size()) ? emphasis[index] : 0},
                   {"activeWrappedRows", index >= 0 ? renderer.rowCount(index) : 0},
                   {"activeTextHeight", index >= 0 ? renderer.textHeight(index) : 0},
                   {"activeFontSize", index >= 0 ? renderer.fittedSize(index) : 0},
@@ -367,8 +417,10 @@ struct Hud
                 return;
             auto key = Json::array({title, artist, static_cast<int>(std::round(d))}).dump();
             const bool nextPlaying = s.value("isPlaying", false);
+            if (key == trackKey && (s.value("seek", false) || std::abs(p - progress()) > 0.5))
+                snapLyrics = true;
             dirty = dirty || key != trackKey || playing != nextPlaying || duration != d ||
-                    (!nextPlaying && position != p);
+                    (!nextPlaying && position != p) || snapLyrics;
             if (key != trackKey)
             {
                 trackLabel = Wide(title + "  ·  " + artist);
@@ -517,7 +569,9 @@ struct Hud
                 index = next;
             }
             double dest = std::max(0, index);
-            if (std::abs(scroll - dest) > 6)
+            const bool snap = snapLyrics;
+            snapLyrics = false;
+            if (snap || std::abs(scroll - dest) > 6)
                 scroll = dest;
             else
                 scroll += (dest - scroll) * (1 - std::exp(-dt * 15));
@@ -563,7 +617,10 @@ struct Hud
                 {
                     const float ly = center + static_cast<float>(lyricCenters[i] - offset);
                     const bool active = i == index;
-                    emphasis[i] += ((active ? 1.0 : 0.0) - emphasis[i]) * (1 - std::exp(-dt * 26));
+                    if (snap)
+                        emphasis[i] = active ? 1.0 : 0.0;
+                    else
+                        emphasis[i] += ((active ? 1.0 : 0.0) - emphasis[i]) * (1 - std::exp(-dt * 26));
                     const float scale = 0.68f + 0.32f * static_cast<float>(emphasis[i]);
                     const float tx = (w - renderer.layoutWidth(i) * scale) / 2;
                     renderer.draw(i, tx, ly, scale,
@@ -829,8 +886,13 @@ static LRESULT CALLBACK HudProc(HWND window, UINT message, WPARAM w, LPARAM l)
                 hud->server.broadcast({{"type", "getPlayback"}});
             return 0;
         case WM_MOUSEACTIVATE:
-            return MA_NOACTIVATE;
+            return hud->fullscreen && !hud->locked ? MA_ACTIVATE : MA_NOACTIVATE;
         case WM_MOUSEMOVE:
+            if (hud->restoreDragPending)
+            {
+                hud->moveRestoreDrag(l);
+                return 0;
+            }
             if (hud->sizingMoving)
             {
                 hud->movePointer(l);
@@ -894,14 +956,18 @@ static LRESULT CALLBACK HudProc(HWND window, UINT message, WPARAM w, LPARAM l)
                 else
                 {
                     hud->form.hide();
+                    if (hud->fullscreen)
+                        SetFocus(window);
                     if (!hud->fullscreen)
-                    {
                         hud->beginSizeMove(false, {px, py});
-                    }
+                    else if (py >= 0 && py < 28)
+                        hud->beginRestoreDrag({px, py});
                 }
                 return 0;
             }
         case WM_LBUTTONUP:
+            if (hud->restoreDragPending)
+                hud->endSizeMove();
             if (hud->sizingMoving)
             {
                 hud->movePointer(l);
@@ -914,11 +980,27 @@ static LRESULT CALLBACK HudProc(HWND window, UINT message, WPARAM w, LPARAM l)
             hud->endSizeMove();
             return 0;
         case WM_KEYDOWN:
-            if (w == VK_ESCAPE && hud->sizingMoving)
+            if (w == VK_ESCAPE && hud->restoreDragPending)
+                hud->endSizeMove();
+            else if (w == VK_ESCAPE && hud->sizingMoving)
             {
                 hud->dragPointer = hud->dragStartPointer;
                 hud->applyDrag();
                 hud->endSizeMove();
+            }
+            // User32 routes keyboard input to the focused window; no global hook is installed.
+            else if (hud->fullscreen && !hud->locked && GetFocus() == window &&
+                     !(GetKeyState(VK_CONTROL) & 0x8000) &&
+                     !(GetKeyState(VK_MENU) & 0x8000))
+            {
+                if (w == VK_LEFT || w == VK_RIGHT)
+                    hud->server.broadcast({{"type", "playerAction"}, {"action", "seek"},
+                                           {"deltaMs", w == VK_LEFT ? -5000 : 5000}});
+                else if (w == VK_UP || w == VK_DOWN)
+                    hud->server.broadcast({{"type", "playerAction"}, {"action", "volume"},
+                                           {"delta", w == VK_UP ? 0.05 : -0.05}});
+                else if (w == VK_SPACE && !(l & (1LL << 30)))
+                    hud->server.broadcast({{"type", "playerAction"}, {"action", "toggle"}});
             }
             return 0;
         case WM_RBUTTONUP:

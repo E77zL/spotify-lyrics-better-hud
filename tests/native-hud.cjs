@@ -57,6 +57,7 @@ const health=async()=>{let r=await fetch('http://127.0.0.1:'+port+'/health',{hea
   for(let i=0;i<20;i++)send({type:'playback',snapshot:{...snapshot,positionSec:42,isPlaying:false}});
   await delay(500);assert.equal((await health()).frameCount,idleFrames,'Repeated paused snapshots must not dirty the surface');
   const normal=(await health()).bounds;
+  await click('keyLeft');await delay(100);assert.equal(messages.filter(m=>m.type==='playerAction').length,0,'Normal overlay ignores playback shortcuts');
   await click('begin');await delay(300);const dragStart=await health();assert(dragStart.sizingMoving);
   const moveLatency=await click('moveBurst');await delay(300);const moved=await health();
   assert.equal(moved.glassUpdateCount,dragStart.glassUpdateCount,'No compositor reconfiguration per mouse report');
@@ -83,9 +84,40 @@ const health=async()=>{let r=await fetch('http://127.0.0.1:'+port+'/health',{hea
   console.log('PASS 512 mouse-message move/resize bursts, cached movement, continuous glass, capture release, Escape and saved bounds:',moveLatency,resizeLatency);
   await click('fullscreen');await delay(400);h=await health();assert(h.fullscreen);
   assert(h.bounds.width>=normal.width&&h.bounds.height>normal.height);
+  assert(h.keyboardFocus,'Fullscreen HUD owns keyboard focus: '+JSON.stringify(h));
+  for(const key of ['Left','Right','Up','Down','Space','SpaceRepeat'])await click('key'+key);
+  await delay(200);assert.deepEqual(messages.filter(m=>m.type==='playerAction'),[
+   {type:'playerAction',action:'seek',deltaMs:-5000},{type:'playerAction',action:'seek',deltaMs:5000},
+   {type:'playerAction',action:'volume',delta:0.05},{type:'playerAction',action:'volume',delta:-0.05},
+   {type:'playerAction',action:'toggle'}],'Fullscreen keys and Space repeat suppression');
+  send({type:'lyrics',key,source:'test',lines:Array.from({length:70},(_,i)=>({time:i,text:'Seek line '+i}))});
+  send({type:'playback',snapshot:{...snapshot,positionSec:10,isPlaying:false,seek:true}});await delay(300);
+  const beforeSeekLayout=(await health()).lyricLayoutCount;
+  for(const position of [15,10,15]){
+   send({type:'playback',snapshot:{...snapshot,positionSec:position,isPlaying:false,seek:true}});
+   await delay(300);h=await health();assert.equal(h.activeIndex,position);
+   assert.equal(h.scrollIndex,position,'Seek must snap to the target instead of waiting for the scroll animation');
+   assert.equal(h.activeEmphasis,1,'The target lyric is immediately highlighted');
+   assert.equal(h.lyricLayoutCount,beforeSeekLayout,'Seeking reuses lyric layouts');
+  }
+  send({type:'playback',snapshot:{...snapshot,positionSec:20,isPlaying:false}});await delay(300);
+  h=await health();assert.equal(h.scrollIndex,20,'External timeline jumps also bypass the old transition');
+  send({type:'lyrics',key,source:'test',lines:[{time:0,text:'First'},{time:11,text:'Second'}]});
+  send({type:'playback',snapshot:{...snapshot,positionSec:42,isPlaying:false}});await delay(300);
+  console.log('PASS paused fullscreen forward/back seek: target row, instant highlight, no trailing scroll and cached layout');
+  await click('topBegin');await click('end');await delay(200);assert((await health()).fullscreen,'Clicking top edge must not restore');
   await click('typography');await delay(300);h=await health();assert(h.flyoutHwnd);
   assert(h.flyout.y>=h.bounds.y+32&&h.flyout.y+h.flyout.height<=h.bounds.y+h.bounds.height);
   await click('fullscreen');await delay(300);h=await health();assert.equal(h.fullscreen,false);assert.deepEqual(h.bounds,normal);assert.equal(h.flyoutHwnd,0);
+  await click('fullscreen');await delay(300);await click('topBegin');await click('step');await delay(300);
+  h=await health();assert(!h.fullscreen&&h.sizingMoving,'Top drag restores and starts a normal drag: '+JSON.stringify(h));
+  assert.equal(h.bounds.width,normal.width);assert.equal(h.bounds.height,normal.height);
+  const restored=h.bounds;await click('step');await delay(300);h=await health();
+  assert.equal(h.bounds.x,restored.x+80);assert.equal(h.bounds.y,restored.y+40);
+  await click('end');await delay(300);assert(!(await health()).sizingMoving);
+  // Put the fixture back at its original bounds for the remaining layout tests.
+  await click('layoutRestoreNormal');await delay(300);
+  console.log('PASS fullscreen playback shortcuts, repeat suppression, click threshold and restore-follow drag');
   send({type:'lyrics',key,source:'test',lines:[{time:0,text:'Previous lyric'},
    {time:11,text:'A phrase that wraps without clipping or ellipses. '.repeat(12)}]});
   await click('layoutNarrow');await delay(800);const narrow=await health();
